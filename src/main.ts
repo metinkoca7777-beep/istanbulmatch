@@ -16,6 +16,7 @@ let storage: Storage | null = null;
 try { storage = window.localStorage; } catch (e) {}
 
 const app = new App(loadSave(storage), storage);
+if (import.meta.env.DEV) (window as any).__app = app; // for scripted demos and checks in dev
 document.querySelectorAll<HTMLImageElement>('img[data-k]').forEach(im => { im.src = IMGURL[im.dataset.k!]; });
 app.start();
 
