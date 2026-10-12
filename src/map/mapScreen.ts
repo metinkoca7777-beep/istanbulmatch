@@ -44,6 +44,7 @@ export class MapScreen {
     const ch = L.district, inCh = LEVELS.filter(x => x.district === ch), pos = inCh.indexOf(L) + 1;
     $('chapter').textContent = `${CHAPTERS[ch]} · ${pos}/${inCh.length}`;
     $('soundBtn').textContent = save.sound ? '🔊' : '🔇';
+    $('musicBtn').classList.toggle('off', !save.music);
     requestAnimationFrame(() => this.centerOn(next, false));
   }
 

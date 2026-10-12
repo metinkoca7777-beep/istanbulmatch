@@ -10,7 +10,10 @@ import { persistSave, recordWin, type SaveData } from '../engine/save';
 import type { BoosterKind, Pos } from '../engine/types';
 import { BoardView } from '../render/boardView';
 import { MapScreen } from '../map/mapScreen';
-import { ensureAudio, setSoundGate, sfx } from '../audio/sfx';
+import { ensureAudio, setMusicGate, setSoundGate, sfx, ui } from '../audio/sfx';
+import { refreshMusic, setMusicMode } from '../audio/music';
+import { flyToGoal } from './collect';
+import { confetti } from './confetti';
 import { imgReady } from '../assets/images';
 import { buzz } from '../platform/native';
 import { LANDMARK } from '../map/landmarks';
@@ -25,6 +28,7 @@ export class App {
 
   constructor(readonly save: SaveData, private storage: Storage | null) {
     setSoundGate(() => this.save.sound);
+    setMusicGate(() => this.save.music);
     this.talk = new Talk(() => this.game.level);
     const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
     this.game = new Game(save, {
@@ -33,6 +37,7 @@ export class App {
       now: () => performance.now(),
       sfx, buzz,
       spark: (r,c,col,n) => this.view.spark(r,c,col,n),
+      collect: (kind, type, r, c) => flyToGoal(this.game.goals, kind, type, this.view.cellCenter(r, c)),
       floatText: (t,c,r) => this.view.floatText(t,c,r),
       say: (w,t) => this.talk.say(w,t),
       quip: (w,t) => this.talk.quip(w,t),
@@ -58,7 +63,7 @@ export class App {
   }
 
   // ---------------- screens ----------------
-  goToMap = () => { closeModal(); this.talk.stop(); this.game.busy = true; show('home'); this.map.render(); };
+  goToMap = () => { closeModal(); this.talk.stop(); this.game.busy = true; show('home'); setMusicMode('map'); this.map.render(); };
 
   startLevel(idx: number, fromCard?: boolean){
     const g = this.game, level = LEVELS[idx];
@@ -66,13 +71,13 @@ export class App {
     g.start(idx, level);
     $('lvlName').textContent = `${idx+1} · ${level.name}`;
     $('gLand').innerHTML = LANDMARK[level.icon];
-    show('game'); this.view.resize($('boardWrap'));
+    show('game'); setMusicMode('game'); this.view.resize($('boardWrap'));
     renderGoals(g.goals); updateHud(g); updateBoosters(g);
-    if (fromCard){ setTimeout(() => { g.busy = false; g.lastInput = performance.now(); this.talk.dialog(level.npc ? [['N',''] as const, ...level.talk] : level.talk); }, 350); return; }
+    if (fromCard){ ui.start(); setTimeout(() => { g.busy = false; g.lastInput = performance.now(); this.talk.dialog(level.npc ? [['N',''] as const, ...level.talk] : level.talk); }, 350); return; }
     this.talk.say('H', level.talk[0][1]);
     openModal(`<div class="banner">${idx+1} · ${level.name}</div><p>Collect in <b>${level.moves} moves</b>:</p><div class="row" id="introGoals"></div><p class="quote"><b>Karagöz:</b> “${level.talk[1][1]}”</p><div class="row"><button class="btn" id="goBtn">Play</button><button class="btn alt" id="mapBtn">Map</button></div>`);
     goalChips('introGoals', g.goals, 42, x => x.need);
-    $('goBtn').onclick = () => { closeModal(); g.busy = false; g.lastInput = performance.now(); this.talk.dialog(level.talk); };
+    $('goBtn').onclick = () => { closeModal(); ui.start(); g.busy = false; g.lastInput = performance.now(); this.talk.dialog(level.talk); };
     $('mapBtn').onclick = this.goToMap;
   }
 
@@ -82,7 +87,9 @@ export class App {
     recordWin(save, levelIdx, stars, LEVELS.length);
     this.persist();
     const last = levelIdx === LEVELS.length - 1;
-    openModal(`<div class="banner">${last ? 'Curtain call!' : level.name + ' cleared!'}</div><div class="stars">${'★'.repeat(stars)}<span class="off">${'★'.repeat(3-stars)}</span></div><p class="quote"><b>Hacivat:</b> “${g.board.pick(WIN_H)}”</p>${last ? '' : `<div class="fact"><b>New stop unlocked: ${LEVELS[levelIdx+1].name}</b>${LEVELS[levelIdx+1].sub}</div>`}<p>Reward: 🩴 +1${stars === 3 ? '  🧹 +1  🎲 +1  ⚡ +1' : ''}</p><div class="row">${last ? '' : '<button class="btn" id="nextBtn">Continue</button>'}<button class="btn alt" id="mapBtn">Map</button></div>`);
+    openModal(`<div class="banner">${last ? 'Curtain call!' : level.name + ' cleared!'}</div><div class="stars">${[0,1,2].map(i => `<span class="${i < stars ? 'on' : 'off'}" style="animation-delay:${.35 + i*.28}s">★</span>`).join('')}</div><p class="quote"><b>Hacivat:</b> “${g.board.pick(WIN_H)}”</p>${last ? '' : `<div class="fact"><b>New stop unlocked: ${LEVELS[levelIdx+1].name}</b>${LEVELS[levelIdx+1].sub}</div>`}<p>Reward: 🩴 +1${stars === 3 ? '  🧹 +1  🎲 +1  ⚡ +1' : ''}</p><div class="row">${last ? '' : '<button class="btn" id="nextBtn">Continue</button>'}<button class="btn alt" id="mapBtn">Map</button></div>`);
+    for (let i = 0; i < stars; i++) setTimeout(() => ui.star(i), 350 + i*280);
+    if (stars >= 2) confetti(stars === 3 ? 160 : 90);
     if (!last) $('nextBtn').onclick = () => { const n = levelIdx + 1; this.goToMap(); setTimeout(() => this.map.centerOn(n, true), 250); setTimeout(() => this.map.openPlace(n), 900); };
     $('mapBtn').onclick = this.goToMap;
   }
@@ -102,11 +109,25 @@ export class App {
     const g = this.game;
     if (g.busy || modalOpen()) return false;
     g.busy = true;
-    openModal(`<div class="banner">Tea break</div><p class="quote"><b>Karagöz:</b> “A tea break? Two sugars for me!”</p><div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="mapBtn">Map</button></div>`);
+    openModal(`<div class="banner">Tea break</div><p class="quote"><b>Karagöz:</b> “A tea break? Two sugars for me!”</p><div class="row toggles"><button class="tog" id="togSound"></button><button class="tog" id="togMusic"></button></div><div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="mapBtn">Map</button></div>`);
+    this.bindToggles();
     $('resumeBtn').onclick = () => { closeModal(); g.busy = false; g.lastInput = performance.now(); };
     $('mapBtn').onclick = this.goToMap;
     return true;
   }
+
+  /** Sound / music switches on the pause card. */
+  private bindToggles(){
+    const paint = () => {
+      $('togSound').textContent = `${this.save.sound ? '🔊' : '🔇'} Sound ${this.save.sound ? 'on' : 'off'}`; $('togSound').classList.toggle('off', !this.save.sound);
+      $('togMusic').textContent = `🎵 Music ${this.save.music ? 'on' : 'off'}`; $('togMusic').classList.toggle('off', !this.save.music);
+    };
+    $('togSound').onclick = () => { this.toggleSound(); paint(); };
+    $('togMusic').onclick = () => { this.toggleMusic(); paint(); };
+    paint();
+  }
+  private toggleSound(){ this.save.sound = !this.save.sound; this.persist(); $('soundBtn').textContent = this.save.sound ? '🔊' : '🔇'; ensureAudio(); }
+  private toggleMusic(){ this.save.music = !this.save.music; this.persist(); $('musicBtn').classList.toggle('off', !this.save.music); ensureAudio(); refreshMusic(); }
 
   private toggleBooster(kind: Exclude<BoosterKind, 'zar'>){
     const g = this.game;
@@ -167,7 +188,10 @@ export class App {
     $('bOklava').onclick = () => this.toggleBooster('oklava');
     $('bZar').onclick = () => g.useZar();
     $('backBtn').onclick = () => { this.pause(); };
-    $('soundBtn').onclick = () => { this.save.sound = !this.save.sound; this.persist(); $('soundBtn').textContent = this.save.sound ? '🔊' : '🔇'; ensureAudio(); };
+    $('soundBtn').onclick = () => this.toggleSound();
+    $('musicBtn').onclick = () => this.toggleMusic();
+    // Every button press gets a soft click (and wakes the audio on the first one).
+    document.addEventListener('click', e => { if ((e.target as Element).closest?.('button')){ ensureAudio(); ui.click(); } }, true);
     $('playBtn').onclick = () => { ensureAudio(); this.map.openPlace(Math.min(LEVELS.length, this.save.unlocked) - 1); };
     window.addEventListener('resize', () => { if (isOn('game')) v.resize($('boardWrap')); else this.map.render(); });
   }

@@ -5,14 +5,14 @@ const mem = (init?: string) => { const m = new Map<string, string>(); if (init !
 
 describe('save', () => {
   it('starts with 3 slippers, 2 of each other booster and level 1 unlocked', () => {
-    expect(loadSave(mem())).toEqual({ unlocked:1, stars:[], boost:{ terlik:3, supurge:2, oklava:2, zar:2 }, sound:true });
+    expect(loadSave(mem())).toEqual({ unlocked:1, stars:[], boost:{ terlik:3, supurge:2, oklava:2, zar:2 }, sound:true, music:true });
   });
   it('keeps the original storage key so existing players keep their progress', () => {
     expect(SKEY).toBe('tatli-kavga-v1');
   });
   it('merges a stored save over the defaults (old saves without new boosters still work)', () => {
     const s = loadSave(mem(JSON.stringify({ unlocked:5, stars:[3,2], boost:{ terlik:7 }, sound:false })));
-    expect(s).toEqual({ unlocked:5, stars:[3,2], boost:{ terlik:7, supurge:2, oklava:2, zar:2 }, sound:false });
+    expect(s).toEqual({ unlocked:5, stars:[3,2], boost:{ terlik:7, supurge:2, oklava:2, zar:2 }, sound:false, music:true });
   });
   it('survives corrupt JSON and missing storage', () => {
     expect(loadSave(mem('{nope'))).toEqual(defaultSave());

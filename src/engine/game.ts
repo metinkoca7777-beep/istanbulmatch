@@ -1,10 +1,10 @@
 import { Board, C, D4, R, groupSpecial, inb, placeFor, type Group } from './board';
 import { allDone, goalOpen, goalOpenTile, makeGoals, progress } from './goals';
 import { starsFor, type SaveData } from './save';
-import type { BoosterKind, Fx, Goal, Level, Pos, QueueItem, RC, Special, Speaker, Tile } from './types';
+import type { Blast, BoosterKind, Fx, Goal, Level, Pos, QueueItem, RC, Special, Speaker, Tile } from './types';
 import { CHAIN_Q, CHAIN_TXT, SP_Q, WIN_K } from '../data/dialogue';
 
-export type Sfx = 'swap' | 'nope' | 'pop' | 'boom' | 'wood' | 'win' | 'lose';
+export type Sfx = 'swap' | 'nope' | 'pop' | 'boom' | 'wood' | 'chest' | 'cloth' | 'spawn' | 'combo' | 'slap' | 'zap' | 'broom' | 'dice' | 'win' | 'lose';
 
 /**
  * Everything the engine needs from the outside world. The browser wires these to timers,
@@ -15,9 +15,12 @@ export interface GameHooks {
   /** Resolves once every tile has finished sliding into its cell. */
   waitSettle(): Promise<void>;
   now(): number;
-  sfx(k: Sfx, f?: number): void;
+  /** f: pitch hint in Hz for pops; blast: which special went off, for 'boom'. */
+  sfx(k: Sfx, f?: number, blast?: Blast): void;
   buzz(ms: number): void;
   spark(r: number, c: number, col: string, n: number): void;
+  /** A goal just counted one unit cleared at (r,c); lets the UI fly an icon to the goal. */
+  collect?(kind: Goal['kind'], type: number | undefined, r: number, c: number): void;
   floatText(txt: string, c: number, r: number): void;
   say(who: Speaker, text: string): void;
   /** Speech that is throttled and cancels the queued dialogue. */
@@ -78,18 +81,20 @@ export class Game {
   addExtraMoves() { this.extraUsed = true; this.movesLeft += 5; this.hudDirty = true; }
 
   // ---------------- hits ----------------
-  private progress(kind: Goal['kind'], type?: number) { if (progress(this.goals, kind, type)) this.hudDirty = true; }
+  private progress(kind: Goal['kind'], type: number | undefined, r: number, c: number) {
+    if (progress(this.goals, kind, type)){ this.hudDirty = true; this.hooks.collect?.(kind, type, r, c); }
+  }
 
   private removeTile(r: number, c: number) {
     const t = this.grid[r][c].t; if (!t) return;
     this.grid[r][c].t = null; this.dying.push({ t, life:.2, max:.2 });
-    if (t.type >= 0){ this.progress('tile', t.type); this.hooks.spark(r,c,TCOL[t.type],6); }
+    if (t.type >= 0){ this.progress('tile', t.type, r, c); this.hooks.spark(r,c,TCOL[t.type],6); }
   }
 
   damageBlocker(r: number, c: number) {
     const cell = this.grid[r][c]; if (!cell.b) return;
     cell.b.hp--; cell.b.shake = .25; this.hooks.spark(r,c,'#a86d34',10); this.hooks.sfx('wood');
-    if (cell.b.hp <= 0){ cell.b = null; this.progress('sandik'); this.hooks.spark(r,c,'#e6b23a',12); }
+    if (cell.b.hp <= 0){ cell.b = null; this.progress('sandik', undefined, r, c); this.hooks.spark(r,c,'#e6b23a',12); this.hooks.sfx('chest'); }
   }
 
   /** Hits one cell: damages a chest, else peels a kilim layer and clears/queues the tile on it. */
@@ -97,7 +102,7 @@ export class Game {
     if (!inb(r,c)) return;
     const cell = this.grid[r][c];
     if (cell.b){ this.damageBlocker(r,c); return; }
-    if (cell.k > 0){ cell.k--; this.progress('kilim'); this.hooks.spark(r,c,'#e6b23a',5); }
+    if (cell.k > 0){ cell.k--; this.progress('kilim', undefined, r, c); this.hooks.spark(r,c,'#e6b23a',5); this.hooks.sfx('cloth'); }
     const t = cell.t; if (!t) return;
     if (t.special){ if (!t.fired){ t.fired = true; this.queue.push({ r, c, special:t.special, tile:t }); } return; }
     this.removeTile(r,c);
@@ -142,7 +147,7 @@ export class Game {
     if (q.tile){ const p = this.board.findTile(q.tile); if (p){ grid[p[0]][p[1]].t = null; this.dying.push({ t:q.tile, life:.15, max:.15 }); } }
     const sp = q.special, cells = new Map<number, RC>();
     const add = (y: number, x: number) => { if (inb(y,x)) cells.set(y*C+x, [y,x]); };
-    h.sfx('boom'); h.buzz(15); this.shakeT = .18;
+    h.sfx('boom', undefined, q.special); h.buzz(15); this.shakeT = .18;
     switch (sp){
       case 'vh': for (let i=0;i<C;i++) add(r,i); this.fx.push({ k:'sweep', r, c, dir:'h', t:0, d:.34 }); break;
       case 'vv': for (let i=0;i<R;i++) add(i,c); this.fx.push({ k:'sweep', r, c, dir:'v', t:0, d:.34 }); break;
@@ -187,7 +192,7 @@ export class Game {
       const created = this.clearGroups(groups, pref); pref = null;
       h.sfx('pop', 440 + chain*90); h.buzz(8);
       if (chain >= 2) h.floatText(CHAIN_TXT[Math.min(chain,5)-2], (C-1)/2, (R-1)/2);
-      if (created.length){ const q = SP_Q[created[0]]; h.quip(q[0], q[1]); }
+      if (created.length){ h.sfx('spawn'); const q = SP_Q[created[0]]; h.quip(q[0], q[1]); }
       else if (chain >= 3) h.quip('K', this.board.pick(CHAIN_Q));
       await h.sleep(130);
     }
@@ -235,7 +240,7 @@ export class Game {
     for (const t of [t1,t2]){ t.fired = true; const p = this.board.findTile(t); if (p){ this.grid[p[0]][p[1]].t = null; this.dying.push({ t, life:.22, max:.22 }); } }
     const s = [t1.special!, t2.special!], has = (x: Special) => s.includes(x);
     const { r, c } = pos;
-    h.floatText('COMBO!', c, r); h.quip('K','What a combo, Hacivat!');
+    h.floatText('COMBO!', c, r); h.sfx('combo'); h.quip('K','What a combo, Hacivat!');
     if (has('nazar')){
       if (s[0] === 'nazar' && s[1] === 'nazar') this.queue.push({ r, c, special:'all' });
       else {
@@ -300,14 +305,14 @@ export class Game {
     if (kind === 'terlik'){
       h.quip('K','Mom\'s flying slipper! It never misses!');
       this.fx.push({ k:'slip', x1:p.c, y1:p.r, t:0, d:.38 }); await h.sleep(380);
-      h.sfx('boom'); h.buzz(25); this.shakeT = .25; this.hitCell(p.r,p.c);
+      h.sfx('slap'); h.buzz(25); this.shakeT = .25; this.hitCell(p.r,p.c);
     } else if (kind === 'oklava'){
       h.quip('H','Lightning strikes the column, effendi!');
-      this.fx.push({ k:'oklava', c:p.c, t:0, d:.45 }); h.sfx('boom');
+      this.fx.push({ k:'oklava', c:p.c, t:0, d:.45 }); h.sfx('zap');
       for (let r=0;r<R;r++){ this.hitCell(r,p.c); await h.sleep(40); }
     } else if (kind === 'supurge'){
       h.quip('H','Swept spotless, maşallah!');
-      this.fx.push({ k:'broom', r:p.r, t:0, d:.45 });
+      this.fx.push({ k:'broom', r:p.r, t:0, d:.45 }); h.sfx('broom');
       for (let c=0;c<C;c++){ this.hitCell(p.r,c); await h.sleep(40); }
     }
     await this.cascade(null); await this.afterTurn();
@@ -319,7 +324,7 @@ export class Game {
     if (this.busy || this.save.boost.zar <= 0){ if (!this.busy) h.quip('K','No dice left! Win with three stars to earn more.'); return; }
     this.busy = true; this.boosterMode = null; this.selected = null; this.hint = null;
     this.save.boost.zar--; h.persist(); h.boostersChanged();
-    h.quip('K','Come on, double sixes!'); h.floatText('Shuffle!', (C-1)/2, (R-1)/2);
+    h.quip('K','Come on, double sixes!'); h.sfx('dice'); h.floatText('Shuffle!', (C-1)/2, (R-1)/2);
     await this.shuffleBoard(true); await this.cascade(null); await this.afterTurn();
   }
 }

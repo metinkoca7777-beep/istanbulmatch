@@ -9,10 +9,12 @@ export interface SaveData {
   stars: number[];
   boost: Record<BoosterKind, number>;
   sound: boolean;
+  /** Background music (separate from sound effects). */
+  music: boolean;
 }
 
 const defaultBoost = (): SaveData['boost'] => ({ terlik:3, supurge:2, oklava:2, zar:2 });
-export const defaultSave = (): SaveData => ({ unlocked:1, stars:[], boost:defaultBoost(), sound:true });
+export const defaultSave = (): SaveData => ({ unlocked:1, stars:[], boost:defaultBoost(), sound:true, music:true });
 
 type KV = Pick<Storage, 'getItem' | 'setItem'>;
 

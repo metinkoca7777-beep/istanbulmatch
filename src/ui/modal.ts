@@ -1,8 +1,9 @@
 import { $ } from './dom';
 import { iconFor } from '../render/sprites';
 import type { Goal } from '../engine/types';
+import { ui } from '../audio/sfx';
 
-export function openModal(html: string){ $('card').innerHTML = html; $('modal').classList.add('on'); }
+export function openModal(html: string){ $('card').innerHTML = html; $('modal').classList.add('on'); ui.open(); }
 export function closeModal(){ $('modal').classList.remove('on'); }
 export const modalOpen = () => $('modal').classList.contains('on');
 
