@@ -58,13 +58,15 @@ export function buildMap(save: Pick<SaveData, 'unlocked' | 'stars'>, mapZ: numbe
   s += `<path d="${smoothPath(pts)}" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="1 11" stroke-linecap="round"/>`;
   const doneN = Math.min(un, LEVELS.length);
   if (doneN >= 2) s += `<path d="${smoothPath(pts.slice(0, doneN))}" fill="none" stroke="#ffcf3a" stroke-width="7" stroke-linecap="round"/>`;
-  LEVELS.forEach(L => {
+  // Real-location markers only for stops already reached, so locked parts of the map stay calm.
+  LEVELS.forEach((L,i) => {
+    if (i+1 > un) return;
     const [px,py] = L.pt, [bx,by] = L.badge;
     s += `<line x1="${px}" y1="${py}" x2="${bx}" y2="${by}" stroke="#2a1505" stroke-width="2.5" stroke-dasharray="3 4" opacity=".55"/><circle cx="${px}" cy="${py}" r="5" fill="#d8322a" stroke="#fff" stroke-width="2.2"/>`;
   });
   LEVELS.forEach((L,i) => {
     const [bx,by] = L.badge, locked = i+1 > un, cur = i+1 === un, st = save.stars[i] || 0;
-    s += `<g class="pin${locked ? ' locked' : ''}${cur ? ' cur' : ''}" data-i="${i}" transform="translate(${bx} ${by})">`;
+    s += `<g class="pin${locked ? ' locked' : ''}${cur ? ' cur' : ''}" data-i="${i}" transform="translate(${bx} ${by})${locked ? ' scale(.82)' : cur ? ' scale(1.12)' : ''}">`;
     if (cur) s += `<circle r="31" class="pulse" fill="none" stroke="#ffd34d" stroke-width="5"/>`;
     s += `<circle r="29" fill="#fff" stroke="#173b85" stroke-width="4"/><circle r="24" fill="url(#bbg)"/>`;
     s += `<g clip-path="url(#bclip)" class="ico"><svg x="-23" y="-25" width="46" height="46" viewBox="0 0 100 100">${LANDMARK[L.icon]}</svg></g>`;

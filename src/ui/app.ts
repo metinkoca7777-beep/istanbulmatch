@@ -13,6 +13,7 @@ import { MapScreen } from '../map/mapScreen';
 import { ensureAudio, setSoundGate, sfx } from '../audio/sfx';
 import { imgReady } from '../assets/images';
 import { buzz } from '../platform/native';
+import { LANDMARK } from '../map/landmarks';
 
 /** Wires the engine to the DOM: screens, modals, input and the render loop. */
 export class App {
@@ -64,6 +65,7 @@ export class App {
     this.view.reset();
     g.start(idx, level);
     $('lvlName').textContent = `${idx+1} · ${level.name}`;
+    $('gLand').innerHTML = LANDMARK[level.icon];
     show('game'); this.view.resize($('boardWrap'));
     renderGoals(g.goals); updateHud(g); updateBoosters(g);
     if (fromCard){ setTimeout(() => { g.busy = false; g.lastInput = performance.now(); this.talk.dialog(level.npc ? [['N',''] as const, ...level.talk] : level.talk); }, 350); return; }

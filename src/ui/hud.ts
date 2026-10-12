@@ -9,7 +9,7 @@ export function renderGoals(goals: GoalEl[]){
   const box = $('goals'); box.innerHTML = '';
   goals.forEach(g => {
     const d = document.createElement('div'); d.className = 'goal';
-    d.append(iconFor(g, 42)); const s = document.createElement('span'); d.append(s); g.el = d; g.span = s; box.append(d);
+    d.append(iconFor(g, 38)); const s = document.createElement('span'); d.append(s); g.el = d; g.span = s; box.append(d);
   });
 }
 

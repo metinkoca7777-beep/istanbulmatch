@@ -1,6 +1,6 @@
 # İstanbul Match
 
-Royal Match tarzı, İstanbul'u tanıtan match-3 oyunu. Vite + TypeScript projesi, Android için Capacitor ile paketleniyor. Orijinal tek dosyalık sürüm referans olarak `legacy/tatli-kavga.html` içinde duruyor; davranış o dosyayla birebir aynı tutuluyor.
+Royal Match tarzı, İstanbul'u tanıtan match-3 oyunu. Vite + TypeScript projesi, Android için Capacitor ile paketleniyor. Orijinal tek dosyalık sürüm referans olarak `legacy/tatli-kavga.html` içinde duruyor; oyun mantığı o dosyayla birebir aynı tutuluyor. Görünüm ondan ayrıldı: oyun ekranında koyu ve yarı saydam tahta hücreleri, tek parça üst panel, tahtayı örtmeyen konuşma satırı, tahtanın arkasında durağın mekân silüeti (`#gLand`) ve kaydırma ipucu var.
 
 ## Amaç
 - Oyuncu gerçek İstanbul haritasında durak durak ilerliyor.

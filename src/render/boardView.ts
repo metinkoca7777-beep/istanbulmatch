@@ -27,10 +27,10 @@ export class BoardView {
 
   reset(){ this.parts = []; this.floats = []; }
 
-  /** Fits the board into its wrapper (a multiple of 8 px, 200..560). */
+  /** Fits the board into its wrapper (a multiple of 8 px, 200..560), leaving room for the gold frame. */
   resize(wrap: HTMLElement){
     const w = wrap.clientWidth, h = wrap.clientHeight;
-    let size = Math.floor(Math.min(w - 50, h - 44, 560));
+    let size = Math.floor(Math.min(w - 40, h - 32, 560));
     size = Math.max(200, size - size % C);
     this.boardPx = size; this.cs = size / C; this.dpr = Math.min(3, window.devicePixelRatio || 1);
     this.cv.style.width = this.cv.style.height = size + 'px';
@@ -84,11 +84,15 @@ export class BoardView {
     const { ctx, cs, sprites, T } = this, g = this.game, grid = g.grid, W = this.boardPx;
     const { selected, hint } = g;
     ctx.setTransform(this.dpr,0,0,this.dpr,0,0);
-    ctx.fillStyle = '#8fb9ec'; ctx.fillRect(0,0,W,W);
+    ctx.clearRect(0,0,W,W);
     if (g.shakeT > 0){ ctx.translate((Math.random()-.5)*cs*.14, (Math.random()-.5)*cs*.14); }
+    // Translucent navy wells: bright tiles pop, and the stop's landmark shows through the board.
+    const gap = Math.max(1, cs*.045), rad = cs*.16;
+    ctx.fillStyle = 'rgba(10,19,48,.2)'; ctx.fillRect(0,0,W,W);
     for (let r=0;r<R;r++) for (let c=0;c<C;c++){
       const x = c*cs, y = r*cs, cell = grid[r][c];
-      ctx.fillStyle = (r+c)%2 ? '#c2dafa' : '#dcebff'; ctx.fillRect(x, y, cs, cs);
+      ctx.fillStyle = (r+c)%2 ? 'rgba(28,52,128,.74)' : 'rgba(38,68,152,.74)'; rr(ctx, x+gap, y+gap, cs-2*gap, cs-2*gap, rad); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.07)'; rr(ctx, x+gap, y+gap, cs-2*gap, cs*.42, rad); ctx.fill();
       if (cell.k > 0) ctx.drawImage(sprites.get('k'+cell.k, gg => drawKilimU(gg, cell.k)), x, y, cs, cs);
     }
     if (selected){ ctx.fillStyle = 'rgba(255,214,80,.75)'; rr(ctx, selected.c*cs+2, selected.r*cs+2, cs-4, cs-4, cs*.2); ctx.fill(); }
@@ -117,6 +121,7 @@ export class BoardView {
       const sh = b.shake > 0 ? Math.sin(b.shake*60)*cs*.06 : 0;
       ctx.drawImage(sprites.get('c'+b.hp, gg => drawChestU(gg, b.hp)), c*cs + sh, r*cs, cs, cs);
     }
+    if (hint && hint.length === 2) this.drawSwipeHint(hint[0], hint[1]);
     this.drawFx();
     this.parts.forEach(p => { ctx.globalAlpha = Math.min(1, p.life*2); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.sz,0,Math.PI*2); ctx.fill(); });
     ctx.globalAlpha = 1;
@@ -128,6 +133,19 @@ export class BoardView {
       ctx.fillStyle = '#ffd34d'; ctx.fillText(f.txt, f.x, f.y - p*cs*1.2);
       ctx.globalAlpha = 1;
     });
+  }
+
+  /** A fingertip that slides from one hinted cell to the other, so the suggested swap reads as a gesture. */
+  private drawSwipeHint([r0,c0]: [number, number], [r1,c1]: [number, number]){
+    const { ctx, cs } = this, p = (this.T % 1.4) / 1.4, k = Math.min(1, p / .7), e = k*k*(3 - 2*k);
+    const x = (c0 + .5 + (c1 - c0)*e)*cs, y = (r0 + .5 + (r1 - r0)*e)*cs;
+    ctx.save();
+    ctx.globalAlpha = p < .85 ? .9 : (1 - p) / .15 * .9;
+    ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.strokeStyle = '#13245c'; ctx.lineWidth = Math.max(2, cs*.06);
+    ctx.beginPath(); ctx.arc(x, y, cs*.17, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.globalAlpha *= .5; ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(1.5, cs*.04);
+    ctx.beginPath(); ctx.arc(x, y, cs*(.22 + .1*Math.sin(this.T*8)), 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
   }
 
   private drawFx(){
