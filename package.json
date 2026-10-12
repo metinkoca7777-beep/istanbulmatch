@@ -15,7 +15,8 @@
     "android:open": "cap open android",
     "android:bundle": "npm run cap:sync && cd android && ./gradlew bundleRelease",
     "android:apk": "npm run cap:sync && cd android && ./gradlew assembleDebug",
-    "android:assets": "capacitor-assets generate --android --iconBackgroundColor '#0c1832' --iconBackgroundColorDark '#0c1832' --splashBackgroundColor '#0c1832' --splashBackgroundColorDark '#0c1832'"
+    "android:assets": "capacitor-assets generate --android --iconBackgroundColor '#0c1832' --iconBackgroundColorDark '#0c1832' --splashBackgroundColor '#0c1832' --splashBackgroundColorDark '#0c1832'",
+    "simulate": "rolldown scripts/simulate.ts --platform node --format esm -o node_modules/.cache/simulate.mjs --logLevel warn && node node_modules/.cache/simulate.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
