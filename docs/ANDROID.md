@@ -13,7 +13,7 @@ npm run android:open    # Android Studio'da aç (emülatör / cihazda çalışt�
 npm run android:apk     # debug APK: android/app/build/outputs/apk/debug/
 ```
 
-Uygulama kimliği `com.kolomp.tatlikavga`. Play'e ilk yüklemeden sonra bu kimlik **değiştirilemez**. Değiştirmek istiyorsan ilk yüklemeden önce `capacitor.config.ts` ve `android/app/build.gradle` içinde değiştir.
+Uygulama kimliği `com.kolomp.istanbulmatch`. Play'e ilk yüklemeden sonra bu kimlik **değiştirilemez**. Değiştirmek istiyorsan ilk yüklemeden önce `capacitor.config.ts` ve `android/app/build.gradle` içinde değiştir.
 
 ## İkon ve açılış ekranı
 - Kaynak dosyalar `assets/src/*.svg` içinde. Hacivat ve Karagöz çizimleri oyundaki SVG sembollerinden alındı, gökyüzü oyun sahnesinden.
@@ -50,7 +50,7 @@ GitHub Actions ile: **Actions → "Android release (AAB)" → Run workflow**. Ö
 Her yüklemede `android/app/build.gradle` içindeki `versionCode` değerini 1 artır, `versionName` değerini de güncelle.
 
 ## Google Play Console kontrol listesi
-1. **Uygulama oluştur:** ad "Tatlı Kavga", varsayılan dil İngilizce (oyunun dili), tür: Oyun → Bulmaca, ücretsiz.
+1. **Uygulama oluştur:** ad "İstanbul Match", varsayılan dil İngilizce (oyunun dili), tür: Oyun → Bulmaca, ücretsiz.
 2. **Önce dahili test:** AAB'yi "Internal testing" kanalına yükle ve kendi cihazında dene.
 3. **Mağaza kaydı:**
    - Uygulama ikonu 512×512. `assets/icon-only.png` dosyasını 512 px'e küçült.

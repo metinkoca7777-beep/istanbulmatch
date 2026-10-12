@@ -1,4 +1,4 @@
-package com.kolomp.tatlikavga;
+package com.kolomp.istanbulmatch;
 
 import com.getcapacitor.BridgeActivity;
 

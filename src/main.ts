@@ -1,12 +1,9 @@
 // Bundled instead of Google Fonts so the Android build looks identical offline.
-import '@fontsource/baloo-2/latin-500.css';
-import '@fontsource/baloo-2/latin-ext-500.css';
-import '@fontsource/baloo-2/latin-700.css';
-import '@fontsource/baloo-2/latin-ext-700.css';
-import '@fontsource/baloo-2/latin-800.css';
-import '@fontsource/baloo-2/latin-ext-800.css';
-import '@fontsource/lilita-one/latin-400.css';
-import '@fontsource/lilita-one/latin-ext-400.css';
+// Use the per-weight files: they carry unicode-range, so Turkish letters (ş, ğ, İ) come from the latin-ext face.
+import '@fontsource/baloo-2/500.css';
+import '@fontsource/baloo-2/700.css';
+import '@fontsource/baloo-2/800.css';
+import '@fontsource/lilita-one/400.css';
 import './styles/main.css';
 import { App } from './ui/app';
 import { isOn } from './ui/dom';

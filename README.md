@@ -1,4 +1,4 @@
-# Tatlı Kavga · An Istanbul Match-3 Tour
+# İstanbul Match · Hacivat & Karagöz's Istanbul Tour
 
 Hacivat & Karagöz take you stop by stop across a real map of Istanbul, from Sultanahmet to Kadıköy.
 

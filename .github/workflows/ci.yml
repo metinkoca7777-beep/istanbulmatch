@@ -39,5 +39,5 @@ jobs:
         run: ./gradlew --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: tatli-kavga-debug-apk
+          name: istanbul-match-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk

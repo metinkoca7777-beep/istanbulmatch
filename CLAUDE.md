@@ -1,4 +1,4 @@
-# Tatlı Kavga — İstanbul Match-3
+# İstanbul Match
 
 Royal Match tarzı, İstanbul'u tanıtan match-3 oyunu. Vite + TypeScript projesi, Android için Capacitor ile paketleniyor. Orijinal tek dosyalık sürüm referans olarak `legacy/tatli-kavga.html` içinde duruyor; davranış o dosyayla birebir aynı tutuluyor.
 
@@ -28,7 +28,7 @@ Android ve Google Play adımları için `docs/ANDROID.md` dosyasına bak.
     - Dış dünyaya (süre, animasyonun oturması, ses, konuşma) sadece `GameHooks` üzerinden erişir.
     - Rastgelelik constructor'a veriliyor, böylece testlerde sabit tohum kullanılabiliyor.
   - `goals.ts`: hedef hesapları.
-  - `save.ts`: kayıt. `localStorage` anahtarı `tatli-kavga-v1`, değiştirilmemeli. Yıldız ve ödül kuralları da burada.
+  - `save.ts`: kayıt. `localStorage` anahtarı `tatli-kavga-v1` (oyunun eski adından kalma), oyuncu ilerlemesi kaybolmasın diye değiştirilmemeli. Yıldız ve ödül kuralları da burada.
   - `types.ts`: ortak tipler.
 - **`src/data/levels.ts`:** `LEVELS`, 12 bölüm. Her bölümde şu alanlar var:
   - mekân bilgisi: `name`, `district`, `icon`, `sub`, `fact`

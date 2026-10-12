@@ -1,8 +1,8 @@
 {
-  "name": "tatli-kavga",
+  "name": "istanbul-match",
   "private": true,
   "version": "1.0.0",
-  "description": "Tatlı Kavga — An Istanbul Match-3 Tour",
+  "description": "İstanbul Match — Hacivat & Karagöz's Istanbul match-3 tour",
   "type": "module",
   "scripts": {
     "dev": "vite",

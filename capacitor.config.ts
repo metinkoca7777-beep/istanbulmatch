@@ -2,8 +2,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   // Permanent once the app is published on Google Play.
-  appId: 'com.kolomp.tatlikavga',
-  appName: 'Tatlı Kavga',
+  appId: 'com.kolomp.istanbulmatch',
+  appName: 'İstanbul Match',
   webDir: 'dist',
   backgroundColor: '#0c1832',
   android: {

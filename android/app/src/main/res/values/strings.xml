@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Tatlı Kavga</string>
-    <string name="title_activity_main">Tatlı Kavga</string>
-    <string name="package_name">com.kolomp.tatlikavga</string>
-    <string name="custom_url_scheme">com.kolomp.tatlikavga</string>
+    <string name="app_name">İstanbul Match</string>
+    <string name="title_activity_main">İstanbul Match</string>
+    <string name="package_name">com.kolomp.istanbulmatch</string>
+    <string name="custom_url_scheme">com.kolomp.istanbulmatch</string>
 </resources>

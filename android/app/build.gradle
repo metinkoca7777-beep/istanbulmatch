@@ -9,10 +9,10 @@ def signingValue = { String key, String env -> keystoreProps.getProperty(key) ?:
 def releaseStoreFile = signingValue('storeFile', 'TK_UPLOAD_STORE_FILE')
 
 android {
-    namespace = "com.kolomp.tatlikavga"
+    namespace = "com.kolomp.istanbulmatch"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.kolomp.tatlikavga"
+        applicationId "com.kolomp.istanbulmatch"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Bump versionCode for every upload to Google Play.
