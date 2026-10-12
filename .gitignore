@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# Android signing secrets — never commit
+*.keystore
+*.jks
+android/keystore.properties

@@ -1,0 +1,38 @@
+name: Android release (AAB)
+
+# Builds the signed App Bundle for Google Play. Run it from the Actions tab.
+# Needs repository secrets (see docs/ANDROID.md):
+#   UPLOAD_KEYSTORE_BASE64, UPLOAD_STORE_PASSWORD, UPLOAD_KEY_ALIAS, UPLOAD_KEY_PASSWORD
+on:
+  workflow_dispatch:
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm test
+      - run: npm run cap:sync
+      - name: Restore upload key
+        run: echo "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
+      - name: Signed release bundle
+        working-directory: android
+        env:
+          TK_UPLOAD_STORE_FILE: ${{ runner.temp }}/upload.jks
+          TK_UPLOAD_STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
+          TK_UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          TK_UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon bundleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tatli-kavga-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
