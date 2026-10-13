@@ -15,6 +15,11 @@ const USING_TEST_UNITS = UNITS.rewarded === TEST_UNITS.rewarded;
 const TEST_DEVICES = String(import.meta.env.VITE_ADMOB_TEST_DEVICES || '').split(',').map(s => s.trim()).filter(Boolean);
 
 const native = Capacitor.isNativePlatform();
+/**
+ * Real ads only exist in the Android app. On the public website there are no ads at all; the labelled
+ * stand-in is only for dev and the demo build (VITE_WEB_AD_PREVIEW=1).
+ */
+export const adsEnabled = native || import.meta.env.DEV || import.meta.env.VITE_WEB_AD_PREVIEW === '1';
 const KEY = 'istanbul-match-ads';
 
 export type RewardResult = 'rewarded' | 'skipped' | 'unavailable';
@@ -43,7 +48,7 @@ const preloadInterstitial = () => AdMob.prepareInterstitial({ adId: UNITS.inters
 
 /** Consent (UMP) first, then the SDK, then preload. Safe to call once at start-up. */
 export async function initAds(){
-  if (!native){ ready = true; return; }
+  if (!native){ ready = adsEnabled; return; }
   try {
     let info = await AdMob.requestConsentInfo();
     if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) info = await AdMob.showConsentForm();

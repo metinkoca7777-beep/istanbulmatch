@@ -14,7 +14,7 @@ import { ensureAudio, setMusicGate, setSoundGate, sfx, ui } from '../audio/sfx';
 import { refreshMusic, setMusicMode } from '../audio/music';
 import { flyToGoal } from './collect';
 import { confetti } from './confetti';
-import { levelEnded, maybeInterstitial, privacyOptionsRequired, refillsAvailable, showPrivacyOptions, showRewarded } from '../platform/ads';
+import { adsEnabled, levelEnded, maybeInterstitial, privacyOptionsRequired, refillsAvailable, showPrivacyOptions, showRewarded } from '../platform/ads';
 import { IMGURL, imgReady } from '../assets/images';
 import { buzz } from '../platform/native';
 import { LANDMARK } from '../map/landmarks';
@@ -99,7 +99,7 @@ export class App {
   showLose(){
     const g = this.game;
     sfx('lose'); this.talk.stop(); this.talk.say('H','You have torn the curtain and left it in ruins!');
-    openModal(`<div class="banner">The tea went cold!</div><p class="quote"><b>Hacivat:</b> “You have torn the curtain and left it in ruins!”<br><b>Karagöz:</b> “Brew another pot, I'll fix it!”</p><div class="row" id="loseGoals"></div><div class="row">${g.extraUsed ? '' : '<button class="btn warm adBtn" id="moreBtn"><span class="adTag">▶ AD</span>🍵 +5 moves</button>'}<button class="btn" id="retryBtn">Try again</button><button class="btn alt" id="mapBtn">Map</button></div>`);
+    openModal(`<div class="banner">The tea went cold!</div><p class="quote"><b>Hacivat:</b> “You have torn the curtain and left it in ruins!”<br><b>Karagöz:</b> “Brew another pot, I'll fix it!”</p><div class="row" id="loseGoals"></div><div class="row">${g.extraUsed ? '' : `<button class="btn warm adBtn" id="moreBtn">${adsEnabled ? '<span class="adTag">▶ AD</span>' : ''}🍵 +5 moves</button>`}<button class="btn" id="retryBtn">Try again</button><button class="btn alt" id="mapBtn">Map</button></div>`);
     goalChips('loseGoals', g.goals.filter(x => x.got < x.need), 36, x => x.need - x.got);
     levelEnded();
     if (!g.extraUsed) $('moreBtn').onclick = async () => {
@@ -145,7 +145,7 @@ export class App {
     if (g.busy || modalOpen()) return;
     const NAMES: Record<BoosterKind, [string, string]> = { terlik:['slipper','slipper'], oklava:['lightning','bolt'], supurge:['broom','broom'], zar:['dice','die'] };
     const [name, img] = NAMES[kind], left = refillsAvailable();
-    if (!left){ this.talk.quip('K', line); return; }
+    if (!adsEnabled || !left){ this.talk.quip('K', line); return; }
     g.busy = true;
     openModal(`<div class="banner">Out of ${name}s</div><div class="refillIco"><img src="${IMGURL[img]}" alt=""></div><p>Watch a short ad to get <b>+1 ${name}</b>.</p><p class="small">${left} free refill${left > 1 ? 's' : ''} left today</p><div class="row"><button class="btn warm adBtn" id="refillBtn"><span class="adTag">▶ AD</span>+1 ${name}</button><button class="btn alt" id="noBtn">No thanks</button></div>`);
     const close = () => { closeModal(); g.busy = false; g.lastInput = performance.now(); };
