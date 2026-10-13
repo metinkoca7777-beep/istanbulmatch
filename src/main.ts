@@ -11,6 +11,7 @@ import { IMGURL } from './assets/images';
 import { closeModal, modalOpen } from './ui/modal';
 import { loadSave } from './engine/save';
 import { initNative } from './platform/native';
+import { adShowing, initAds } from './platform/ads';
 
 let storage: Storage | null = null;
 try { storage = window.localStorage; } catch (e) {}
@@ -19,6 +20,7 @@ const app = new App(loadSave(storage), storage);
 if (import.meta.env.DEV) (window as any).__app = app; // for scripted demos and checks in dev
 document.querySelectorAll<HTMLImageElement>('img[data-k]').forEach(im => { im.src = IMGURL[im.dataset.k!]; });
 app.start();
+initAds();
 
 const click = (id: string) => { const b = document.getElementById(id); if (b){ b.click(); return true; } return false; };
 initNative({
@@ -30,5 +32,6 @@ initNative({
     if (isOn('game')) return app.pause() || true;
     return false;
   },
-  onBackground(){ if (isOn('game') && !modalOpen()) app.pause(); },
+  // A full-screen ad also takes the app to the background; don't pause for that.
+  onBackground(){ if (isOn('game') && !modalOpen() && !adShowing()) app.pause(); },
 });

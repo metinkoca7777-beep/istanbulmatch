@@ -19,6 +19,7 @@
     "simulate": "rolldown scripts/simulate.ts --platform node --format esm -o node_modules/.cache/simulate.mjs --logLevel warn && node node_modules/.cache/simulate.mjs"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.2.1",
     "@capacitor/android": "^8.5.3",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",

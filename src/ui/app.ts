@@ -14,7 +14,8 @@ import { ensureAudio, setMusicGate, setSoundGate, sfx, ui } from '../audio/sfx';
 import { refreshMusic, setMusicMode } from '../audio/music';
 import { flyToGoal } from './collect';
 import { confetti } from './confetti';
-import { imgReady } from '../assets/images';
+import { levelEnded, maybeInterstitial, privacyOptionsRequired, refillsAvailable, showPrivacyOptions, showRewarded } from '../platform/ads';
+import { IMGURL, imgReady } from '../assets/images';
 import { buzz } from '../platform/native';
 import { LANDMARK } from '../map/landmarks';
 
@@ -90,18 +91,26 @@ export class App {
     openModal(`<div class="banner">${last ? 'Curtain call!' : level.name + ' cleared!'}</div><div class="stars">${[0,1,2].map(i => `<span class="${i < stars ? 'on' : 'off'}" style="animation-delay:${.35 + i*.28}s">★</span>`).join('')}</div><p class="quote"><b>Hacivat:</b> “${g.board.pick(WIN_H)}”</p>${last ? '' : `<div class="fact"><b>New stop unlocked: ${LEVELS[levelIdx+1].name}</b>${LEVELS[levelIdx+1].sub}</div>`}<p>Reward: 🩴 +1${stars === 3 ? '  🧹 +1  🎲 +1  ⚡ +1' : ''}</p><div class="row">${last ? '' : '<button class="btn" id="nextBtn">Continue</button>'}<button class="btn alt" id="mapBtn">Map</button></div>`);
     for (let i = 0; i < stars; i++) setTimeout(() => ui.star(i), 350 + i*280);
     if (stars >= 2) confetti(stars === 3 ? 160 : 90);
-    if (!last) $('nextBtn').onclick = () => { const n = levelIdx + 1; this.goToMap(); setTimeout(() => this.map.centerOn(n, true), 250); setTimeout(() => this.map.openPlace(n), 900); };
-    $('mapBtn').onclick = this.goToMap;
+    levelEnded();
+    if (!last) $('nextBtn').onclick = async () => { await maybeInterstitial(); const n = levelIdx + 1; this.goToMap(); setTimeout(() => this.map.centerOn(n, true), 250); setTimeout(() => this.map.openPlace(n), 900); };
+    $('mapBtn').onclick = async () => { await maybeInterstitial(); this.goToMap(); };
   }
 
   showLose(){
     const g = this.game;
     sfx('lose'); this.talk.stop(); this.talk.say('H','You have torn the curtain and left it in ruins!');
-    openModal(`<div class="banner">The tea went cold!</div><p class="quote"><b>Hacivat:</b> “You have torn the curtain and left it in ruins!”<br><b>Karagöz:</b> “Brew another pot, I'll fix it!”</p><div class="row" id="loseGoals"></div><div class="row">${g.extraUsed ? '' : '<button class="btn warm" id="moreBtn">🍵 +5 moves</button>'}<button class="btn" id="retryBtn">Try again</button><button class="btn alt" id="mapBtn">Map</button></div>`);
+    openModal(`<div class="banner">The tea went cold!</div><p class="quote"><b>Hacivat:</b> “You have torn the curtain and left it in ruins!”<br><b>Karagöz:</b> “Brew another pot, I'll fix it!”</p><div class="row" id="loseGoals"></div><div class="row">${g.extraUsed ? '' : '<button class="btn warm adBtn" id="moreBtn"><span class="adTag">▶ AD</span>🍵 +5 moves</button>'}<button class="btn" id="retryBtn">Try again</button><button class="btn alt" id="mapBtn">Map</button></div>`);
     goalChips('loseGoals', g.goals.filter(x => x.got < x.need), 36, x => x.need - x.got);
-    if (!g.extraUsed) $('moreBtn').onclick = () => { g.addExtraMoves(); closeModal(); g.busy = false; g.lastInput = performance.now(); this.talk.say('K','Fresh tea! Let\'s go!'); };
-    $('retryBtn').onclick = () => { closeModal(); this.startLevel(g.levelIdx); };
-    $('mapBtn').onclick = this.goToMap;
+    levelEnded();
+    if (!g.extraUsed) $('moreBtn').onclick = async () => {
+      const btn = $<HTMLButtonElement>('moreBtn'); btn.disabled = true;
+      // If no ad can be loaded (offline, no fill) the player still gets the moves, as before.
+      const r = await showRewarded('moves');
+      if (r === 'skipped'){ btn.disabled = false; this.talk.say('K','No ad, no tea... fair enough!'); return; }
+      g.addExtraMoves(); closeModal(); g.busy = false; g.lastInput = performance.now(); this.talk.say('K','Fresh tea! Let\'s go!');
+    };
+    $('retryBtn').onclick = async () => { await maybeInterstitial(); closeModal(); this.startLevel(g.levelIdx); };
+    $('mapBtn').onclick = async () => { await maybeInterstitial(); this.goToMap(); };
   }
 
   /** Pause card ("Tea break"). Returns false if it couldn't open (mid-turn or a card is already up). */
@@ -109,8 +118,9 @@ export class App {
     const g = this.game;
     if (g.busy || modalOpen()) return false;
     g.busy = true;
-    openModal(`<div class="banner">Tea break</div><p class="quote"><b>Karagöz:</b> “A tea break? Two sugars for me!”</p><div class="row toggles"><button class="tog" id="togSound"></button><button class="tog" id="togMusic"></button></div><div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="mapBtn">Map</button></div>`);
+    openModal(`<div class="banner">Tea break</div><p class="quote"><b>Karagöz:</b> “A tea break? Two sugars for me!”</p><div class="row toggles"><button class="tog" id="togSound"></button><button class="tog" id="togMusic"></button></div><div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="mapBtn">Map</button></div>${privacyOptionsRequired() ? '<button class="linkBtn" id="privacyBtn">Privacy settings</button>' : ''}`);
     this.bindToggles();
+    if (privacyOptionsRequired()) $('privacyBtn').onclick = () => showPrivacyOptions();
     $('resumeBtn').onclick = () => { closeModal(); g.busy = false; g.lastInput = performance.now(); };
     $('mapBtn').onclick = this.goToMap;
     return true;
@@ -129,11 +139,31 @@ export class App {
   private toggleSound(){ this.save.sound = !this.save.sound; this.persist(); $('soundBtn').textContent = this.save.sound ? '🔊' : '🔇'; ensureAudio(); }
   private toggleMusic(){ this.save.music = !this.save.music; this.persist(); $('musicBtn').classList.toggle('off', !this.save.music); ensureAudio(); refreshMusic(); }
 
+  /** Out of a booster: offer one more for watching an ad (capped per day). */
+  private offerRefill(kind: BoosterKind, line: string){
+    const g = this.game;
+    if (g.busy || modalOpen()) return;
+    const NAMES: Record<BoosterKind, [string, string]> = { terlik:['slipper','slipper'], oklava:['lightning','bolt'], supurge:['broom','broom'], zar:['dice','die'] };
+    const [name, img] = NAMES[kind], left = refillsAvailable();
+    if (!left){ this.talk.quip('K', line); return; }
+    g.busy = true;
+    openModal(`<div class="banner">Out of ${name}s</div><div class="refillIco"><img src="${IMGURL[img]}" alt=""></div><p>Watch a short ad to get <b>+1 ${name}</b>.</p><p class="small">${left} free refill${left > 1 ? 's' : ''} left today</p><div class="row"><button class="btn warm adBtn" id="refillBtn"><span class="adTag">▶ AD</span>+1 ${name}</button><button class="btn alt" id="noBtn">No thanks</button></div>`);
+    const close = () => { closeModal(); g.busy = false; g.lastInput = performance.now(); };
+    $('noBtn').onclick = close;
+    $('refillBtn').onclick = async () => {
+      $<HTMLButtonElement>('refillBtn').disabled = true;
+      const r = await showRewarded('refill');
+      close();
+      if (r === 'rewarded'){ this.save.boost[kind] = Math.min(9, (this.save.boost[kind] || 0) + 1); this.persist(); updateBoosters(g); this.talk.say('K', `One more ${name}, fresh from the bazaar!`); }
+      else if (r === 'unavailable') this.talk.say('H', 'No ad available right now, effendi. Try again later.');
+    };
+  }
+
   private toggleBooster(kind: Exclude<BoosterKind, 'zar'>){
     const g = this.game;
     if (g.busy) return;
     const t = BOOST_TXT[kind];
-    if ((this.save.boost[kind] || 0) <= 0){ this.talk.quip('K', t[2]); return; }
+    if ((this.save.boost[kind] || 0) <= 0){ this.offerRefill(kind, t[2]); return; }
     g.boosterMode = g.boosterMode === kind ? null : kind; g.selected = null;
     if (g.boosterMode) this.talk.say(t[0], t[1]);
     updateBoosters(g);
@@ -186,7 +216,7 @@ export class App {
     $('bTerlik').onclick = () => this.toggleBooster('terlik');
     $('bSupurge').onclick = () => this.toggleBooster('supurge');
     $('bOklava').onclick = () => this.toggleBooster('oklava');
-    $('bZar').onclick = () => g.useZar();
+    $('bZar').onclick = () => { if (!g.busy && (this.save.boost.zar || 0) <= 0) this.offerRefill('zar', 'No dice left! Win with three stars to earn more.'); else g.useZar(); };
     $('backBtn').onclick = () => { this.pause(); };
     $('soundBtn').onclick = () => this.toggleSound();
     $('musicBtn').onclick = () => this.toggleMusic();

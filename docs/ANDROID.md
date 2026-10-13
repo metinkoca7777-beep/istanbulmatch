@@ -58,11 +58,38 @@ Her yüklemede `android/app/build.gradle` içindeki `versionCode` değerini 1 ar
    - En az 2 telefon ekran görüntüsü (dikey, örneğin 1080×1920): harita, oyun tahtası, bilgi kartı.
    - Kısa ve uzun açıklama.
 4. **İçerik derecelendirmesi anketi:** şiddet yok, kumar yok, kullanıcı etkileşimi yok. Muhtemelen "Herkes / PEGI 3" çıkar.
-5. **Hedef kitle:** çocuklara yönelikse (13 yaş altı) "Families" politikası devreye girer. Oyunda reklam ve veri toplama olmadığı için uyumlu, ama ilk sürümde "13+" seçmek inceleme sürecini kısaltır.
-6. **Veri güvenliği formu:** oyun hiçbir veri toplamıyor ya da paylaşmıyor. İlerleme yalnızca cihazda (`localStorage`) tutuluyor. Cevap: "Veri toplanmıyor".
-7. **Gizlilik politikası URL'si:** veri toplanmasa bile oyunlarda isteniyor. Basit bir sayfa yeterli (GitHub Pages olabilir).
+5. **Hedef kitle:** **13+** seç. Oyunda AdMob reklamları var; 13 yaş altını hedeflemek "Families" politikasını ve sertifikalı reklam ayarlarını gerektirir. Kod da buna göre ayarlı: `tagForChildDirectedTreatment: false`, içerik derecesi en fazla "PG".
+6. **Reklam beyanı:** "App content → Ads" bölümünde **"Evet, uygulamada reklam var"** seçilmeli. Mağaza sayfasında "Reklam içerir" etiketi görünür.
+7. **Veri güvenliği formu:** Oyunun kendisi veri toplamıyor; ilerleme yalnızca cihazda tutuluyor. AdMob SDK ise şunları topluyor ve Google'a gönderiyor:
+   - **Cihaz veya diğer kimlikler** (reklam kimliği): reklam veya pazarlama, analiz, dolandırıcılık önleme amacıyla. Google ile paylaşılıyor.
+   - **Uygulama etkileşimleri / tanılama:** reklam ve analiz amacıyla.
+   - Google'ın güncel listesi: AdMob için "Data disclosure" sayfası (developers.google.com/admob/android/privacy/play-data-disclosure). Formu bu listeye göre doldur.
+8. **Gizlilik politikası URL'si:** artık zorunlu. Politikada AdMob'un reklam kimliği kullandığı ve Google'ın gizlilik politikasına bağlantı yer almalı. Basit bir sayfa yeterli (GitHub Pages olabilir).
 8. **Hedef API seviyesi:** `targetSdkVersion 36`. Play bu şartı her yıl yükseltiyor; Console yükleme sırasında uyarı verirse `android/variables.gradle` içinden yükselt.
 9. **Yeni kişisel geliştirici hesabıysan:** üretime çıkmadan önce en az 12 test kullanıcısıyla 14 gün kapalı test şartı var. Bunu takvimine ekle.
+
+## Reklamlar (AdMob)
+
+Oyunda iki tür reklam var; banner yok.
+
+| Tür | Nerede | Kural |
+|---|---|---|
+| **Ödüllü** (oyuncu seçer) | Kaybedince "▶ AD +5 moves"; güçlendirici bitince "▶ AD +1" | Ödül yalnızca reklam sonuna kadar izlenince verilir. Güçlendirici dolumu günde en fazla 5. Reklam yüklenemezse +5 hamle yine verilir (eski davranış). |
+| **Geçiş** (interstitial) | Kazanma/kaybetme kartından çıkarken | İlk 4 bölüm denemesinde hiç yok. En fazla 3 bölüm sonunda bir, en az 3 dakika arayla, ödüllü reklamdan sonraki 90 saniyede yok. |
+
+Kurallar `src/platform/adPolicy.ts` dosyasında ve testli (`tests/adPolicy.test.ts`). Reklam katmanı `src/platform/ads.ts` dosyasında. Tarayıcıda (demo) gerçek reklam yerine etiketli bir önizleme ekranı açılıyor.
+
+**Onay (GDPR/KVKK):** Uygulama açılışında Google UMP onay formu gösteriliyor (Avrupa/İngiltere kullanıcılarına). Gerekiyorsa duraklatma kartında "Privacy settings" bağlantısı çıkıyor. AdMob panelinde **Privacy & messaging → GDPR mesajı** oluşturulmalı, yoksa form görünmez.
+
+### Gerçek reklam kimliklerini bağlama
+Şu an Google'ın **test** kimlikleri kullanılıyor; test reklamı gösterir, para kazandırmaz.
+1. [admob.google.com](https://admob.google.com) üzerinde hesap aç → **Apps → Add app** (Android, Google Play'de henüz yoksa "No" seç).
+2. İki reklam birimi oluştur: **Rewarded** ve **Interstitial**.
+3. Kimlikleri ver:
+   - Yerelde: `.env` dosyası (`.env.example`'ı kopyala) → `VITE_ADMOB_REWARDED_ID`, `VITE_ADMOB_INTERSTITIAL_ID`; uygulama kimliği için `ADMOB_APP_ID=ca-app-pub-…~…` ortam değişkeni ya da `android/gradle.properties` içinde `ADMOB_APP_ID=…`.
+   - GitHub Actions: depo sırları `ADMOB_APP_ID`, `ADMOB_REWARDED_ID`, `ADMOB_INTERSTITIAL_ID`.
+4. Release derlemesi test kimliğiyle yapılırsa Gradle uyarı yazar. Gerçek kimliklerle **kendi reklamlarına tıklama**: hesap kapatılabilir. Kendi cihazını AdMob'da test cihazı olarak ekle.
+5. Play'de yayınladıktan sonra AdMob'da uygulamayı mağaza kaydına bağla ve `app-ads.txt` dosyasını geliştirici web sitene koy.
 
 ## Lisans notu
 Taş, özel taş ve güçlendirici görselleri Microsoft Fluent Emoji 3D'den (MIT). Telif notu `index.html` ve `src/assets/images.ts` dosyalarında. Mağaza açıklamasına ya da oyun içi bir "Hakkında" ekranına da eklemek iyi olur.

@@ -1,0 +1,123 @@
+import { Capacitor } from '@capacitor/core';
+import { AdMob, AdmobConsentStatus, MaxAdContentRating, RewardAdPluginEvents } from '@capacitor-community/admob';
+import { getMixer } from '../audio/mixer';
+import { freshAdState, interstitialDue, noteInterstitial, noteLevelEnd, noteRewarded, refillsLeft, type AdState } from './adPolicy';
+
+// AdMob ad units. Google's official test units are the default; real units come from
+// VITE_ADMOB_REWARDED_ID / VITE_ADMOB_INTERSTITIAL_ID at build time (see docs/ANDROID.md).
+const TEST_UNITS = { rewarded: 'ca-app-pub-3940256099942544/5224354917', interstitial: 'ca-app-pub-3940256099942544/1033173712' };
+const UNITS = {
+  rewarded: import.meta.env.VITE_ADMOB_REWARDED_ID || TEST_UNITS.rewarded,
+  interstitial: import.meta.env.VITE_ADMOB_INTERSTITIAL_ID || TEST_UNITS.interstitial,
+};
+const USING_TEST_UNITS = UNITS.rewarded === TEST_UNITS.rewarded;
+
+const native = Capacitor.isNativePlatform();
+const KEY = 'istanbul-match-ads';
+
+export type RewardResult = 'rewarded' | 'skipped' | 'unavailable';
+
+let state: AdState = freshAdState();
+try { state = { ...state, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch (e) {}
+const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+
+let ready = false;            // SDK initialised and consent allows ads (native)
+let privacyRequired = false;  // show a "Privacy" entry point (GDPR)
+let showing = false;          // a full-screen ad is on screen
+let rewardedLoaded = false, interstitialLoaded = false, earned = false;
+
+/** True while a full-screen ad covers the game (the app may look "backgrounded"). */
+export const adShowing = () => showing;
+
+function pauseAudio(on: boolean){
+  const m = getMixer(); if (!m) return;
+  (on ? m.ac.suspend() : m.ac.resume()).catch(() => {});
+}
+
+const preloadRewarded = () => AdMob.prepareRewardVideoAd({ adId: UNITS.rewarded, isTesting: USING_TEST_UNITS })
+  .then(() => { rewardedLoaded = true; }).catch(() => { rewardedLoaded = false; });
+const preloadInterstitial = () => AdMob.prepareInterstitial({ adId: UNITS.interstitial, isTesting: USING_TEST_UNITS })
+  .then(() => { interstitialLoaded = true; }).catch(() => { interstitialLoaded = false; });
+
+/** Consent (UMP) first, then the SDK, then preload. Safe to call once at start-up. */
+export async function initAds(){
+  if (!native){ ready = true; return; }
+  try {
+    let info = await AdMob.requestConsentInfo();
+    if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) info = await AdMob.showConsentForm();
+    privacyRequired = String(info.privacyOptionsRequirementStatus) === 'REQUIRED';
+    if (!info.canRequestAds) return;
+    await AdMob.initialize({ tagForChildDirectedTreatment: false, maxAdContentRating: MaxAdContentRating.ParentalGuidance });
+    AdMob.addListener(RewardAdPluginEvents.Rewarded, () => { earned = true; });
+    ready = true;
+    preloadRewarded(); preloadInterstitial();
+  } catch (e) { ready = false; }
+}
+
+/** Whether the pause card should offer "Privacy settings" (required in the EEA/UK). */
+export const privacyOptionsRequired = () => native && privacyRequired;
+export async function showPrivacyOptions(){ try { await AdMob.showPrivacyOptionsForm(); } catch (e) {} }
+
+export const refillsAvailable = () => refillsLeft(state, Date.now());
+
+/** A rewarded ad the player asked for. 'unavailable' = no ad could be loaded (offline, no fill, no consent). */
+export async function showRewarded(kind: 'moves' | 'refill'): Promise<RewardResult> {
+  if (!ready) return 'unavailable';
+  let result: RewardResult;
+  if (native){
+    if (!rewardedLoaded){ await Promise.race([preloadRewarded(), new Promise(r => setTimeout(r, 6000))]); }
+    if (!rewardedLoaded) return 'unavailable';
+    earned = false; showing = true; rewardedLoaded = false; pauseAudio(true);
+    try {
+      const item = await AdMob.showRewardVideoAd();
+      result = earned || (item && item.amount > 0) ? 'rewarded' : 'skipped';
+    } catch (e) { result = 'unavailable'; }
+    showing = false; pauseAudio(false);
+    preloadRewarded();
+  } else {
+    result = await webPreview('rewarded');
+  }
+  if (result === 'rewarded'){ noteRewarded(state, Date.now(), kind === 'refill'); persist(); }
+  return result;
+}
+
+/** Call once per finished level attempt (win or lose). */
+export function levelEnded(){ noteLevelEnd(state); persist(); }
+
+/** At a natural break (leaving a win/lose card): shows an interstitial if the rules allow it. */
+export async function maybeInterstitial(){
+  const now = Date.now();
+  if (!ready || !interstitialDue(state, now)) return;
+  if (native){
+    if (!interstitialLoaded) return;
+    showing = true; interstitialLoaded = false; pauseAudio(true);
+    try { await AdMob.showInterstitial(); noteInterstitial(state, now); } catch (e) {}
+    showing = false; pauseAudio(false);
+    preloadInterstitial();
+  } else {
+    await webPreview('interstitial'); noteInterstitial(state, now);
+  }
+  persist();
+}
+
+/**
+ * Web builds (browser demo) have no ad SDK: a clearly labelled stand-in shows where the ad
+ * would play, so the flow can be tried end to end.
+ */
+function webPreview(kind: 'rewarded' | 'interstitial'): Promise<RewardResult> {
+  return new Promise(resolve => {
+    const secs = kind === 'rewarded' ? 5 : 3;
+    const el = document.createElement('div');
+    el.className = 'adPreview';
+    el.innerHTML = `<div class="adBox"><small>${kind === 'rewarded' ? 'Rewarded ad' : 'Ad'} · preview</small><b>Your ad plays here</b><span>On Android this is a real AdMob ${kind} ad.</span><i id="adCount">${secs}</i><button class="btn alt" id="adClose">${kind === 'rewarded' ? 'Skip (no reward)' : 'Close'}</button></div>`;
+    document.body.append(el);
+    pauseAudio(true); showing = true;
+    let left = secs;
+    const done = (r: RewardResult) => { clearInterval(t); el.remove(); pauseAudio(false); showing = false; resolve(r); };
+    const t = setInterval(() => {
+      left--; const c = el.querySelector('#adCount'); if (c) c.textContent = String(Math.max(0, left));
+      if (left <= 0) done(kind === 'rewarded' ? 'rewarded' : 'skipped');
+    }, 1000);
+    el.querySelector<HTMLButtonElement>('#adClose')!.onclick = () => done('skipped');
+  });
+}

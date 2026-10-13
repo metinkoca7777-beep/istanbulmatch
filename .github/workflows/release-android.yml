@@ -2,7 +2,8 @@ name: Android release (AAB)
 
 # Builds the signed App Bundle for Google Play. Run it from the Actions tab.
 # Needs repository secrets (see docs/ANDROID.md):
-#   UPLOAD_KEYSTORE_BASE64, UPLOAD_STORE_PASSWORD, UPLOAD_KEY_ALIAS, UPLOAD_KEY_PASSWORD
+#   UPLOAD_KEYSTORE_BASE64, UPLOAD_STORE_PASSWORD, UPLOAD_KEY_ALIAS, UPLOAD_KEY_PASSWORD,
+#   ADMOB_APP_ID, ADMOB_REWARDED_ID, ADMOB_INTERSTITIAL_ID
 on:
   workflow_dispatch:
 
@@ -22,6 +23,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run cap:sync
+        env:
+          VITE_ADMOB_REWARDED_ID: ${{ secrets.ADMOB_REWARDED_ID }}
+          VITE_ADMOB_INTERSTITIAL_ID: ${{ secrets.ADMOB_INTERSTITIAL_ID }}
       - name: Restore upload key
         run: echo "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
       - name: Signed release bundle
@@ -31,6 +35,7 @@ jobs:
           TK_UPLOAD_STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
           TK_UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
           TK_UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+          ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
         run: ./gradlew --no-daemon bundleRelease
       - uses: actions/upload-artifact@v4
         with:

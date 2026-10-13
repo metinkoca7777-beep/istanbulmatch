@@ -8,3 +8,7 @@ coverage/
 *.keystore
 *.jks
 android/keystore.properties
+
+# Local build secrets
+.env
+.env.local
