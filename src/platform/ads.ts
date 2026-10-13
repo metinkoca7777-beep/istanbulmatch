@@ -11,6 +11,8 @@ const UNITS = {
   interstitial: import.meta.env.VITE_ADMOB_INTERSTITIAL_ID || TEST_UNITS.interstitial,
 };
 const USING_TEST_UNITS = UNITS.rewarded === TEST_UNITS.rewarded;
+/** Your own phones (hashed device ids from logcat), so real ad units serve test ads to them. */
+const TEST_DEVICES = String(import.meta.env.VITE_ADMOB_TEST_DEVICES || '').split(',').map(s => s.trim()).filter(Boolean);
 
 const native = Capacitor.isNativePlatform();
 const KEY = 'istanbul-match-ads';
@@ -47,7 +49,10 @@ export async function initAds(){
     if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) info = await AdMob.showConsentForm();
     privacyRequired = String(info.privacyOptionsRequirementStatus) === 'REQUIRED';
     if (!info.canRequestAds) return;
-    await AdMob.initialize({ tagForChildDirectedTreatment: false, maxAdContentRating: MaxAdContentRating.ParentalGuidance });
+    await AdMob.initialize({
+      tagForChildDirectedTreatment: false, maxAdContentRating: MaxAdContentRating.ParentalGuidance,
+      testingDevices: TEST_DEVICES, initializeForTesting: TEST_DEVICES.length > 0,
+    });
     AdMob.addListener(RewardAdPluginEvents.Rewarded, () => { earned = true; });
     ready = true;
     preloadRewarded(); preloadInterstitial();

@@ -70,6 +70,8 @@ Her yüklemede `android/app/build.gradle` içindeki `versionCode` değerini 1 ar
 
 ## Reklamlar (AdMob)
 
+> Adım adım AdMob hesabı, reklam birimleri, GDPR mesajı, test cihazı, app-ads.txt ve ödeme kurulumu: **[docs/ADMOB.md](ADMOB.md)**.
+
 Oyunda iki tür reklam var; banner yok.
 
 | Tür | Nerede | Kural |
