@@ -50,6 +50,8 @@ GitHub Actions ile: **Actions → "Android release (AAB)" → Run workflow**. Ö
 Her yüklemede `android/app/build.gradle` içindeki `versionCode` değerini 1 artır, `versionName` değerini de güncelle.
 
 ## Google Play Console kontrol listesi
+> Mağaza metinleri (EN + TR), görseller ve form cevapları hazır: **[docs/PLAY_STORE.md](PLAY_STORE.md)**. Gizlilik politikası: `https://istanbulmatch.vercel.app/privacy.html` (`public/privacy.html`).
+
 1. **Uygulama oluştur:** ad "İstanbul Match", varsayılan dil İngilizce (oyunun dili), tür: Oyun → Bulmaca, ücretsiz.
 2. **Önce dahili test:** AAB'yi "Internal testing" kanalına yükle ve kendi cihazında dene.
 3. **Mağaza kaydı:**

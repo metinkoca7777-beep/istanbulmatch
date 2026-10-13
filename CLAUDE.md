@@ -17,7 +17,7 @@ Royal Match tarzı, İstanbul'u tanıtan match-3 oyunu. Vite + TypeScript projes
 - `npm run android:apk`: debug APK
 - `npm run android:bundle`: imzalı AAB, gerçek AdMob kimlikleriyle
 
-Android ve Google Play adımları için `docs/ANDROID.md` dosyasına bak.
+Android ve Google Play adımları için `docs/ANDROID.md` dosyasına bak. Mağaza metinleri, görseller (`docs/store/`) ve Play formları `docs/PLAY_STORE.md` dosyasında. `public/privacy.html` gizlilik politikası, `public/app-ads.txt` AdMob doğrulaması; ikisi de Vercel'de yayında olmalı.
 
 ## Proje yapısı
 - **`index.html`:** ekranların HTML iskeleti. Hacivat ve Karagöz SVG `<symbol>` olarak burada çizili (`#hacivat`, `#karagoz`), oyun sahnesinin arka planı da burada.
