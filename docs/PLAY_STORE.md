@@ -20,7 +20,7 @@ Ekran görüntüleri oyunun kendisinden alındı (Galata bölümü), üstlerine 
 - **Kategori:** Puzzle
 - **Ücretsiz / ücretli:** Free
 - **Etiketler:** Match 3, Puzzle, Casual, Offline
-- **İletişim e-postası:** (Play'de herkese açık görünür)
+- **İletişim e-postası:** metinkoca7777@gmail.com (Play'de herkese açık görünür)
 - **Web sitesi:** https://istanbulmatch.vercel.app
 - **Gizlilik politikası:** https://istanbulmatch.vercel.app/privacy.html
 
