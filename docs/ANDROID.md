@@ -83,14 +83,15 @@ Kurallar `src/platform/adPolicy.ts` dosyasında ve testli (`tests/adPolicy.test.
 
 **Onay (GDPR/KVKK):** Uygulama açılışında Google UMP onay formu gösteriliyor (Avrupa/İngiltere kullanıcılarına). Gerekiyorsa duraklatma kartında "Privacy settings" bağlantısı çıkıyor. AdMob panelinde **Privacy & messaging → GDPR mesajı** oluşturulmalı, yoksa form görünmez.
 
-### Gerçek reklam kimliklerini bağlama
-Şu an Google'ın **test** kimlikleri kullanılıyor; test reklamı gösterir, para kazandırmaz.
+### Reklam kimlikleri
+Gerçek kimlikler bağlı: `npm run android:bundle` (Play derlemesi) gerçek reklam gösterir, debug derlemeleri Google'ın test reklamlarını. Ayrıntı: [ADMOB.md, 5. adım](ADMOB.md).
+
+Kimlikleri sıfırdan kurmak gerekirse:
 1. [admob.google.com](https://admob.google.com) üzerinde hesap aç → **Apps → Add app** (Android, Google Play'de henüz yoksa "No" seç).
 2. İki reklam birimi oluştur: **Rewarded** ve **Interstitial**.
 3. Kimlikleri ver:
-   - Yerelde: `.env` dosyası (`.env.example`'ı kopyala) → `VITE_ADMOB_REWARDED_ID`, `VITE_ADMOB_INTERSTITIAL_ID`; uygulama kimliği için `ADMOB_APP_ID=ca-app-pub-…~…` ortam değişkeni ya da `android/gradle.properties` içinde `ADMOB_APP_ID=…`.
-   - GitHub Actions: depo sırları `ADMOB_APP_ID`, `ADMOB_REWARDED_ID`, `ADMOB_INTERSTITIAL_ID`.
-4. Release derlemesi test kimliğiyle yapılırsa Gradle uyarı yazar. Gerçek kimliklerle **kendi reklamlarına tıklama**: hesap kapatılabilir. Kendi cihazını AdMob'da test cihazı olarak ekle.
+   - Birim kimlikleri `.env.release` dosyasında, uygulama kimliği `android/app/build.gradle` içinde `ADMOB_RELEASE_APP_ID`.
+4. Gerçek kimliklerle **kendi reklamlarına tıklama**: hesap kapatılabilir. Kendi cihazını AdMob'da test cihazı olarak ekle.
 5. Play'de yayınladıktan sonra AdMob'da uygulamayı mağaza kaydına bağla ve `app-ads.txt` dosyasını geliştirici web sitene koy.
 
 ## Lisans notu

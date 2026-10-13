@@ -15,7 +15,7 @@ Royal Match tarzı, İstanbul'u tanıtan match-3 oyunu. Vite + TypeScript projes
 - `npm run build`: `dist/` çıktısı
 - `npm run cap:sync`: build alıp `android/` içine kopyalar
 - `npm run android:apk`: debug APK
-- `npm run android:bundle`: imzalı AAB
+- `npm run android:bundle`: imzalı AAB, gerçek AdMob kimlikleriyle
 
 Android ve Google Play adımları için `docs/ANDROID.md` dosyasına bak.
 
@@ -59,7 +59,7 @@ Android ve Google Play adımları için `docs/ANDROID.md` dosyasına bak.
   - `sfx.ts`: kayıtlı efektler, `src/assets/sfx/*.ogg`. Hepsi Kenney'den, CC0 lisanslı; kaynak listesi `CREDITS.md` dosyasında. Oyun olayına göre efekt seçiliyor; perde hafifçe değişiyor, art arda çalma sınırlanıyor.
   - `music.ts`: fon müziği dosya değil, anlık sentezleniyor. Hicaz makamında kanun benzeri ezgi, dem sesi ve Maksum usulü darbuka; darbuka sadece oyun ekranında çalıyor.
   - Ses ve müzik ayrı ayrı açılıp kapanıyor. Ayar `save.sound` ve `save.music` alanlarında; düğmeler haritanın üstünde ve duraklatma kartında.
-- **`src/platform/ads.ts`, `adPolicy.ts`:** AdMob reklamları. Ödüllü reklam: kaybedince +5 hamle, biten güçlendiriciye +1. Seyrek geçiş reklamı; banner yok. Sıklık kuralları `adPolicy.ts` dosyasında ve testli. Google test kimlikleri varsayılan; AdMob hesap kurulumu adım adım `docs/ADMOB.md` dosyasında.
+- **`src/platform/ads.ts`, `adPolicy.ts`:** AdMob reklamları. Ödüllü reklam: kaybedince +5 hamle, biten güçlendiriciye +1. Seyrek geçiş reklamı; banner yok. Sıklık kuralları `adPolicy.ts` dosyasında ve testli. Gerçek birim kimlikleri `.env.release` dosyasında, uygulama kimliği `android/app/build.gradle` içinde; bunları sadece `npm run android:bundle` (`--mode release`) kullanıyor. Debug derlemeleri Google'ın test kimliklerini, web derlemesi hiç reklam göstermiyor. AdMob kurulumu `docs/ADMOB.md` dosyasında.
 - **`src/platform/native.ts`:** Capacitor tarafı. Titreşim (Haptics), durum çubuğu, splash, Android geri tuşu, arka plana geçince otomatik duraklatma.
 - **`src/assets/img/*.png`:** görseller (Microsoft Fluent Emoji 3D, MIT lisansı). `src/assets/images.ts` bunları anahtar adıyla yüklüyor.
   - Taşlar: `t0` Paşa, `t1` Hilal, `t2` Lale, `t3` Dansöz, `t4` Padişah, `t5` Cin.

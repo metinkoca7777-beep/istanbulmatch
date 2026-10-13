@@ -7,12 +7,10 @@ def keystorePropsFile = rootProject.file('keystore.properties')
 if (keystorePropsFile.exists()) keystorePropsFile.withInputStream { keystoreProps.load(it) }
 def signingValue = { String key, String env -> keystoreProps.getProperty(key) ?: System.getenv(env) }
 def releaseStoreFile = signingValue('storeFile', 'TK_UPLOAD_STORE_FILE')
+// AdMob application ids. Release builds use the real one (ADMOB_APP_ID gradle property or env overrides it);
+// debug builds use Google's test app id so development never serves live ads. See docs/ADMOB.md.
 def ADMOB_TEST_APP_ID = 'ca-app-pub-3940256099942544~3347511713'
-def admobAppId = (findProperty('ADMOB_APP_ID') ?: System.getenv('ADMOB_APP_ID')) ?: ADMOB_TEST_APP_ID
-gradle.taskGraph.whenReady { graph ->
-    if (admobAppId == ADMOB_TEST_APP_ID && graph.allTasks.any { it.name.toLowerCase().contains('release') })
-        logger.warn('WARNING: release build uses the AdMob TEST app id. Set ADMOB_APP_ID (and VITE_ADMOB_* unit ids) before publishing.')
-}
+def ADMOB_RELEASE_APP_ID = (findProperty('ADMOB_APP_ID') ?: System.getenv('ADMOB_APP_ID')) ?: 'ca-app-pub-4357371903036713~2270042242'
 
 android {
     namespace = "com.kolomp.istanbulmatch"
@@ -24,8 +22,6 @@ android {
         // Bump versionCode for every upload to Google Play.
         versionCode 1
         versionName "1.0.0"
-        // AdMob application id. Google's test app id unless ADMOB_APP_ID is set (gradle property or env).
-        resValue "string", "admob_app_id", admobAppId
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -44,7 +40,11 @@ android {
         }
     }
     buildTypes {
+        debug {
+            resValue "string", "admob_app_id", ADMOB_TEST_APP_ID
+        }
         release {
+            resValue "string", "admob_app_id", ADMOB_RELEASE_APP_ID
             if (releaseStoreFile) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

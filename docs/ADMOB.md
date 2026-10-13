@@ -1,6 +1,6 @@
 # AdMob kurulumu (İstanbul Match)
 
-Oyunda reklam kodu hazır. Bu rehber, gerçek reklam gösterip para kazanmak için **AdMob tarafında** yapman gerekenleri sırayla anlatıyor. Kod değişikliği gerekmiyor; sadece üç kimliği projeye vereceksin.
+Oyunda reklam kodu hazır. Bu rehber, gerçek reklam gösterip para kazanmak için **AdMob tarafında** yapman gerekenleri sırayla anlatıyor. Kimlikler projeye girildi (5. adım).
 
 Toplam süre: hesap açma ve ilk ayarlar için ~30–45 dakika. Ödeme ve vergi bilgilerinin onayı birkaç gün sürebilir.
 
@@ -89,38 +89,22 @@ Oyunda karşılığı: onay gerektiren ülkelerde duraklatma kartında **"Privac
 
 ---
 
-## 5. Kimlikleri projeye ver
+## 5. Kimlikler projede (yapıldı)
 
-Üç değer var:
+İstanbul Match'in gerçek kimlikleri depoya işlendi. Bunlar uygulamanın içinde zaten herkese açık; şifre değiller.
 
-| Ad | Örnek | Nerede kullanılıyor |
+| Ne | Kimlik | Dosya |
 |---|---|---|
-| `ADMOB_APP_ID` | `ca-app-pub-123…~456…` | Android manifest (Gradle üzerinden) |
-| `ADMOB_REWARDED_ID` | `ca-app-pub-123…/111…` | Oyun kodu (`VITE_ADMOB_REWARDED_ID`) |
-| `ADMOB_INTERSTITIAL_ID` | `ca-app-pub-123…/222…` | Oyun kodu (`VITE_ADMOB_INTERSTITIAL_ID`) |
+| App ID | `ca-app-pub-4357371903036713~2270042242` | `android/app/build.gradle` (release) |
+| Rewarded (`IM_Rewarded`) | `ca-app-pub-4357371903036713/3078807017` | `.env.release` |
+| Interstitial (`IM_Interstitial`) | `ca-app-pub-4357371903036713/1260212902` | `.env.release` |
 
-### GitHub Actions ile (önerilen)
-Depo → **Settings → Secrets and variables → Actions → New repository secret**:
-- `ADMOB_APP_ID`
-- `ADMOB_REWARDED_ID`
-- `ADMOB_INTERSTITIAL_ID`
+Hangi derleme neyi kullanıyor:
+- **`npm run android:bundle`** ve GitHub'daki **"Android release (AAB)"**: gerçek kimlikler. Play'e giden derleme budur.
+- **`npm run android:apk`**, **`npm run cap:sync`**, Android Studio'dan debug çalıştırma: Google'ın test kimlikleri. Geliştirirken yanlışlıkla kendi reklamına tıklayıp hesabı riske atmazsın.
+- **Web (Vercel)**: reklam yok.
 
-Sonra **Actions → "Android release (AAB)" → Run workflow**. Çıkan AAB gerçek reklam kimlikleriyle derlenmiş olur.
-
-### Kendi bilgisayarında
-1. Proje kökünde `.env.example` dosyasını `.env` adıyla kopyala ve doldur:
-   ```
-   VITE_ADMOB_REWARDED_ID=ca-app-pub-…/…
-   VITE_ADMOB_INTERSTITIAL_ID=ca-app-pub-…/…
-   VITE_ADMOB_TEST_DEVICES=
-   ```
-2. Uygulama kimliğini Gradle'a ver. İki yoldan biri:
-   - `android/gradle.properties` dosyasına `ADMOB_APP_ID=ca-app-pub-…~…` satırını ekle, **ya da**
-   - derlerken: `ADMOB_APP_ID=ca-app-pub-…~… npm run android:bundle`
-3. `.env` dosyası git'e girmez (`.gitignore`'da).
-
-Kontrol: release derlemesi hâlâ test kimliğiyle yapılıyorsa Gradle şu uyarıyı yazar:
-`WARNING: release build uses the AdMob TEST app id`
+Kimlik değişirse `.env.release` dosyasını ve `build.gradle` içindeki `ADMOB_RELEASE_APP_ID` değerini güncelle. Uygulama kimliğini geçici olarak `ADMOB_APP_ID` ortam değişkeni ya da Gradle özelliğiyle de ezebilirsin.
 
 ---
 
@@ -203,7 +187,7 @@ AdMob → **Payments**:
 - [ ] **Rewarded** ve **Interstitial** birimleri oluşturuldu.
 - [ ] GDPR mesajı oluşturulup yayınlandı.
 - [ ] Gizlilik politikası sayfası yayında.
-- [ ] Üç kimlik GitHub secrets'a ya da `.env` ve Gradle'a girildi.
+- [x] Üç kimlik projeye girildi (`.env.release`, `build.gradle`).
 - [ ] Kendi telefonun test cihazı olarak eklendi, "Test Ad" etiketi görüldü.
 - [ ] Play Console: reklam beyanı, 13+, veri güvenliği, web sitesi.
 - [ ] Play'de yayından sonra AdMob'da mağaza bağlantısı yapıldı.
@@ -217,5 +201,4 @@ AdMob → **Payments**:
 | Hiç reklam çıkmıyor, "+5 moves" yine de hamle veriyor | Normal davranış: reklam yüklenemeyince oyuncu cezalandırılmıyor. Yeni birimler birkaç saat sürebilir; uygulama "unpublished" ya da inceleme bekliyor olabilir; internet yok. |
 | AB'den test ederken reklam yok | GDPR mesajı yayınlanmamış, ya da kullanıcı onay vermemiş. |
 | Uygulama açılışta çöküyor | Manifestteki uygulama kimliği geçersiz. `ADMOB_APP_ID`'nin `~` içeren **App ID** olduğundan emin ol, `/` içeren birim kimliği değil. |
-| Gradle "TEST app id" uyarısı | `ADMOB_APP_ID` derlemeye ulaşmadı (5. adım). |
 | Kendi telefonunda gerçek reklam görüyorsun | Test cihazı eklenmemiş (6. adım). Reklama tıklama. |
