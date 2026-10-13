@@ -41,3 +41,13 @@ jobs:
         with:
           name: istanbul-match-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+      # Play Store build with the real AdMob ids. Unsigned here (no upload key in CI);
+      # sign it with the upload key before uploading, or use the "Android release (AAB)" workflow.
+      - run: npm run cap:sync:release
+      - name: Release bundle (unsigned)
+        working-directory: android
+        run: ./gradlew --no-daemon bundleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: istanbul-match-release-aab-unsigned
+          path: android/app/build/outputs/bundle/release/*.aab
