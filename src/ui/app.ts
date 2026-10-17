@@ -14,7 +14,7 @@ import { ensureAudio, setMusicGate, setSoundGate, sfx, ui } from '../audio/sfx';
 import { refreshMusic, setMusicMode } from '../audio/music';
 import { flyToGoal } from './collect';
 import { confetti } from './confetti';
-import { adsEnabled, levelEnded, maybeInterstitial, privacyOptionsRequired, refillsAvailable, showPrivacyOptions, showRewarded } from '../platform/ads';
+import { adStatus, adsEnabled, levelEnded, maybeInterstitial, privacyOptionsRequired, refillsAvailable, showPrivacyOptions, showRewarded } from '../platform/ads';
 import { IMGURL, imgReady } from '../assets/images';
 import { buzz } from '../platform/native';
 import { LANDMARK } from '../map/landmarks';
@@ -118,9 +118,12 @@ export class App {
     const g = this.game;
     if (g.busy || modalOpen()) return false;
     g.busy = true;
-    openModal(`<div class="banner">Tea break</div><p class="quote"><b>Karagöz:</b> “A tea break? Two sugars for me!”</p><div class="row toggles"><button class="tog" id="togSound"></button><button class="tog" id="togMusic"></button></div><div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="mapBtn">Map</button></div>${privacyOptionsRequired() ? '<button class="linkBtn" id="privacyBtn">Privacy settings</button>' : ''}`);
+    openModal(`<div class="banner" id="pauseBanner">Tea break</div><p class="quote"><b>Karagöz:</b> “A tea break? Two sugars for me!”</p><div class="row toggles"><button class="tog" id="togSound"></button><button class="tog" id="togMusic"></button></div><div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="mapBtn">Map</button></div>${privacyOptionsRequired() ? '<button class="linkBtn" id="privacyBtn">Privacy settings</button>' : ''}`);
     this.bindToggles();
     if (privacyOptionsRequired()) $('privacyBtn').onclick = () => showPrivacyOptions();
+    // Hidden ad diagnostics: tap the banner 5 times.
+    let taps = 0;
+    $('pauseBanner').onclick = () => { if (++taps === 5) $('card').insertAdjacentHTML('beforeend', `<p class="small adDiag">${adStatus()}</p>`); };
     $('resumeBtn').onclick = () => { closeModal(); g.busy = false; g.lastInput = performance.now(); };
     $('mapBtn').onclick = this.goToMap;
     return true;
@@ -154,8 +157,10 @@ export class App {
       $<HTMLButtonElement>('refillBtn').disabled = true;
       const r = await showRewarded('refill');
       close();
-      if (r === 'rewarded'){ this.save.boost[kind] = Math.min(9, (this.save.boost[kind] || 0) + 1); this.persist(); updateBoosters(g); this.talk.say('K', `One more ${name}, fresh from the bazaar!`); }
-      else if (r === 'unavailable') this.talk.say('H', 'No ad available right now, effendi. Try again later.');
+      // No ad available (offline, no fill): give it anyway, like "+5 moves". It still counts toward the daily cap.
+      if (r === 'skipped') return;
+      this.save.boost[kind] = Math.min(9, (this.save.boost[kind] || 0) + 1); this.persist(); updateBoosters(g);
+      this.talk.say('K', r === 'rewarded' ? `One more ${name}, fresh from the bazaar!` : `No ad today, so this ${name} is on the house!`);
     };
   }
 
