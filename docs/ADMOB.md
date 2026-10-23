@@ -196,8 +196,9 @@ AdMob → **Payments**:
 
 ## Sorun giderme
 
-**Teşhis satırı:** oyunda duraklat (⏸), açılan kartın üstündeki **"Tea break"** başlığına 5 kez dokun. Kartın altında reklam durumunu gösteren küçük bir satır çıkar, örneğin:
-`native · live units · ready=true · rewarded=none · rewarded load failed 3: No fill.`
+**Teşhis satırı:** oyunda duraklat (⏸). "Tea break" kartının en altında sürüm ve reklam durumu yazar, örneğin:
+`v1.0.2 · native · live units · ready=true · rewarded=none · rewarded load failed 3: No fill.`
+Reklam oynatılamadığında ekranın altında da birkaç saniye "Ad unavailable: …" notu çıkar.
 
 | Satırda | Anlamı |
 |---|---|

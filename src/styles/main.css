@@ -235,3 +235,5 @@ button:focus-visible{ outline:3px solid #fff; outline-offset:3px; }
 .adBox b{ font-family:'Lilita One',system-ui,sans-serif; font-weight:400; font-size:26px; }
 .adBox span{ font-size:14px; color:#cfd8f0; }
 .adBox i{ font-style:normal; font-family:'Lilita One',system-ui,sans-serif; font-size:44px; color:#ffe7a0; }
+.adNote{ position:fixed; left:12px; right:12px; bottom:calc(14px + env(safe-area-inset-bottom)); z-index:60; padding:8px 12px; border-radius:12px;
+  background:rgba(12,24,50,.92); color:#ffe7a0; font-size:12px; line-height:1.3; text-align:center; pointer-events:none; }

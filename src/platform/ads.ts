@@ -41,6 +41,8 @@ const noteError = (where: string, e: unknown) => {
   // AdMob load error 3 = "no fill": usually a new account/app that AdMob has not approved yet.
   lastStatus = `${where} failed${code}: ${String(err?.message || e).slice(0, 120)}`;
 };
+/** Short reason for the last failure ('' if none), shown to the player when no ad could play. */
+export const lastAdError = () => /failed|not allowed/.test(lastStatus) ? lastStatus : (ready ? '' : `ads not ready (${lastStatus})`);
 /** One-line ad status: SDK state, which ad units are in use and the last error. */
 export const adStatus = () => `${native ? 'native' : 'web'} · ${USING_TEST_UNITS ? 'test units' : 'live units'} · ready=${ready} · rewarded=${rewardedLoaded ? 'loaded' : 'none'} · ${lastStatus}`;
 
