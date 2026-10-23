@@ -6,7 +6,7 @@ import { LEVELS } from '../data/levels';
 import { BOOST_TXT, WIN_H } from '../data/dialogue';
 import { Game } from '../engine/game';
 import { inb } from '../engine/board';
-import { persistSave, recordWin, type SaveData } from '../engine/save';
+import { grantWinReward, persistSave, recordWin, type SaveData } from '../engine/save';
 import type { BoosterKind, Pos } from '../engine/types';
 import { BoardView } from '../render/boardView';
 import { MapScreen } from '../map/mapScreen';
@@ -89,10 +89,18 @@ export class App {
     recordWin(save, levelIdx, stars, LEVELS.length);
     this.persist();
     const last = levelIdx === LEVELS.length - 1;
-    openModal(`<div class="banner">${last ? 'Curtain call!' : level.name + ' cleared!'}</div><div class="stars">${[0,1,2].map(i => `<span class="${i < stars ? 'on' : 'off'}" style="animation-delay:${.35 + i*.28}s">★</span>`).join('')}</div><p class="quote"><b>Hacivat:</b> “${g.board.pick(WIN_H)}”</p>${last ? '' : `<div class="fact"><b>New stop unlocked: ${LEVELS[levelIdx+1].name}</b>${LEVELS[levelIdx+1].sub}</div>`}<p>Reward: 🩴 +1${stars === 3 ? '  🧹 +1  🎲 +1  ⚡ +1' : ''}</p><div class="row">${last ? '' : '<button class="btn" id="nextBtn">Continue</button>'}<button class="btn alt" id="mapBtn">Map</button></div>`);
+    openModal(`<div class="banner">${last ? 'Curtain call!' : level.name + ' cleared!'}</div><div class="stars">${[0,1,2].map(i => `<span class="${i < stars ? 'on' : 'off'}" style="animation-delay:${.35 + i*.28}s">★</span>`).join('')}</div><p class="quote"><b>Hacivat:</b> “${g.board.pick(WIN_H)}”</p>${last ? '' : `<div class="fact"><b>New stop unlocked: ${LEVELS[levelIdx+1].name}</b>${LEVELS[levelIdx+1].sub}</div>`}<p>Reward: 🩴 +1${stars === 3 ? '  🧹 +1  🎲 +1  ⚡ +1' : ''}</p>${adsEnabled ? '<div class="row"><button class="btn warm adBtn" id="doubleBtn"><span class="adTag">▶ AD</span>Double reward</button></div>' : ''}<div class="row">${last ? '' : '<button class="btn" id="nextBtn">Continue</button>'}<button class="btn alt" id="mapBtn">Map</button></div>`);
     for (let i = 0; i < stars; i++) setTimeout(() => ui.star(i), 350 + i*280);
     if (stars >= 2) confetti(stars === 3 ? 160 : 90);
     levelEnded();
+    if (adsEnabled) $('doubleBtn').onclick = async () => {
+      const btn = $<HTMLButtonElement>('doubleBtn'); btn.disabled = true;
+      const r = await showRewarded('double');
+      // Unlike "+5 moves", a bonus is only paid for an ad actually watched.
+      if (r !== 'rewarded'){ btn.disabled = false; if (r === 'unavailable'){ this.talk.say('H', 'No ad available right now, effendi.'); this.adNote(); } return; }
+      grantWinReward(save, stars); this.persist(); updateBoosters(g); btn.remove();
+      this.talk.say('K', 'Double helping! The bazaar is generous today!');
+    };
     if (!last) $('nextBtn').onclick = async () => { await maybeInterstitial(); const n = levelIdx + 1; this.goToMap(); setTimeout(() => this.map.centerOn(n, true), 250); setTimeout(() => this.map.openPlace(n), 900); };
     $('mapBtn').onclick = async () => { await maybeInterstitial(); this.goToMap(); };
   }

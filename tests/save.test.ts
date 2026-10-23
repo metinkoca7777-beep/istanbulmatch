@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SKEY, defaultSave, loadSave, persistSave, recordWin, starsFor } from '../src/engine/save';
+import { SKEY, defaultSave, grantWinReward, loadSave, persistSave, recordWin, starsFor } from '../src/engine/save';
 
 const mem = (init?: string) => { const m = new Map<string, string>(); if (init !== undefined) m.set(SKEY, init); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); }, m }; };
 
@@ -56,5 +56,19 @@ describe('recordWin', () => {
     recordWin(s, 11, 3, 12);
     expect(s.boost).toEqual({ terlik:9, supurge:9, oklava:9, zar:9 });
     expect(s.unlocked).toBe(12);
+  });
+});
+
+describe('grantWinReward (double reward ad)', () => {
+  it('pays the same boosters again, capped at 9', () => {
+    const s = defaultSave();
+    const before = { ...s.boost };
+    grantWinReward(s, 3);
+    expect(s.boost.terlik).toBe(before.terlik + 1);
+    expect(s.boost.supurge).toBe(before.supurge + 1);
+    grantWinReward(s, 1);
+    expect(s.boost.supurge).toBe(before.supurge + 1);
+    for (let i = 0; i < 20; i++) grantWinReward(s, 3);
+    expect(Math.max(s.boost.terlik, s.boost.supurge, s.boost.oklava, s.boost.zar)).toBe(9);
   });
 });

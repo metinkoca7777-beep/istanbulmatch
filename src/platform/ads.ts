@@ -88,7 +88,7 @@ export const refillsAvailable = () => refillsLeft(state, Date.now());
  * The callers still give the reward when no ad is available, so a missing ad never blocks the player;
  * a booster refill given that way still counts toward the daily cap.
  */
-export async function showRewarded(kind: 'moves' | 'refill'): Promise<RewardResult> {
+export async function showRewarded(kind: 'moves' | 'refill' | 'double'): Promise<RewardResult> {
   let result: RewardResult = 'unavailable';
   if (!ready){ /* SDK not initialised or no consent: see adStatus() */ }
   else if (native){
@@ -105,7 +105,7 @@ export async function showRewarded(kind: 'moves' | 'refill'): Promise<RewardResu
   } else {
     result = await webPreview('rewarded');
   }
-  if (result !== 'skipped'){ noteRewarded(state, Date.now(), kind === 'refill'); persist(); }
+  if (result === 'rewarded' || (result === 'unavailable' && kind !== 'double')){ noteRewarded(state, Date.now(), kind === 'refill'); persist(); }
   return result;
 }
 

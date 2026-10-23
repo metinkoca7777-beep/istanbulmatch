@@ -13,17 +13,17 @@ describe('interstitials', () => {
   });
   it('show at most every N level ends and with a minimum gap', () => {
     const s = freshAdState();
-    for (let i = 0; i < 4; i++) noteLevelEnd(s);
+    for (let i = 0; i < AD_RULES.interstitialAfterAttempts; i++) noteLevelEnd(s);
     noteInterstitial(s, T0);
-    noteLevelEnd(s); noteLevelEnd(s);
-    expect(interstitialDue(s, T0 + sec(1000))).toBe(false); // only 2 level ends since
+    for (let i = 0; i < AD_RULES.interstitialEvery - 1; i++) noteLevelEnd(s);
+    expect(interstitialDue(s, T0 + sec(1000))).toBe(false); // one level end short
     noteLevelEnd(s);
     expect(interstitialDue(s, T0 + sec(60))).toBe(false); // too soon
     expect(interstitialDue(s, T0 + sec(AD_RULES.interstitialGapSec))).toBe(true);
   });
   it('do not follow a rewarded ad too closely', () => {
     const s = freshAdState();
-    for (let i = 0; i < 6; i++) noteLevelEnd(s);
+    for (let i = 0; i < AD_RULES.interstitialAfterAttempts + AD_RULES.interstitialEvery; i++) noteLevelEnd(s);
     noteRewarded(s, T0, false);
     expect(interstitialDue(s, T0 + sec(30))).toBe(false);
     expect(interstitialDue(s, T0 + sec(AD_RULES.afterRewardedSec))).toBe(true);
