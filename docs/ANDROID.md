@@ -78,8 +78,8 @@ Oyunda iki tür reklam var; banner yok.
 
 | Tür | Nerede | Kural |
 |---|---|---|
-| **Ödüllü** (oyuncu seçer) | Kaybedince "▶ AD +5 moves"; güçlendirici bitince "▶ AD +1" | Ödül yalnızca reklam sonuna kadar izlenince verilir. Güçlendirici dolumu günde en fazla 5. Reklam yüklenemezse +5 hamle yine verilir (eski davranış). |
-| **Geçiş** (interstitial) | Kazanma/kaybetme kartından çıkarken | İlk 4 bölüm denemesinde hiç yok. En fazla 3 bölüm sonunda bir, en az 3 dakika arayla, ödüllü reklamdan sonraki 90 saniyede yok. |
+| **Ödüllü** (oyuncu seçer) | Kaybedince "▶ AD +5 moves"; güçlendirici bitince "▶ AD +1"; kazanınca "▶ AD Double reward" | Ödül yalnızca reklam sonuna kadar izlenince verilir. Güçlendirici dolumu günde en fazla 10. Reklam yüklenemezse +5 hamle ve güçlendirici dolumu yine verilir; "Double reward" verilmez. |
+| **Geçiş** (interstitial) | Kazanma/kaybetme kartından çıkarken | İlk 2 bölüm denemesinde yok. Sonra her 2 bölüm sonunda bir, en az 90 saniye arayla, ödüllü reklamdan sonraki 45 saniyede yok. |
 
 Kurallar `src/platform/adPolicy.ts` dosyasında ve testli (`tests/adPolicy.test.ts`). Reklam katmanı `src/platform/ads.ts` dosyasında. Tarayıcıda (demo) gerçek reklam yerine etiketli bir önizleme ekranı açılıyor.
 

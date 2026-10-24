@@ -6,7 +6,7 @@ import { LEVELS } from '../data/levels';
 import { BOOST_TXT, WIN_H } from '../data/dialogue';
 import { Game } from '../engine/game';
 import { inb } from '../engine/board';
-import { persistSave, recordWin, type SaveData } from '../engine/save';
+import { grantWinReward, persistSave, recordWin, type SaveData } from '../engine/save';
 import type { BoosterKind, Pos } from '../engine/types';
 import { BoardView } from '../render/boardView';
 import { MapScreen } from '../map/mapScreen';
@@ -14,10 +14,11 @@ import { ensureAudio, setMusicGate, setSoundGate, sfx, ui } from '../audio/sfx';
 import { refreshMusic, setMusicMode } from '../audio/music';
 import { flyToGoal } from './collect';
 import { confetti } from './confetti';
-import { adsEnabled, levelEnded, maybeInterstitial, privacyOptionsRequired, refillsAvailable, showPrivacyOptions, showRewarded } from '../platform/ads';
+import { adStatus, adsEnabled, lastAdError, levelEnded, maybeInterstitial, privacyOptionsRequired, refillsAvailable, showPrivacyOptions, showRewarded } from '../platform/ads';
 import { IMGURL, imgReady } from '../assets/images';
 import { buzz } from '../platform/native';
 import { LANDMARK } from '../map/landmarks';
+import { APP_VERSION } from '../version';
 
 /** Wires the engine to the DOM: screens, modals, input and the render loop. */
 export class App {
@@ -88,10 +89,18 @@ export class App {
     recordWin(save, levelIdx, stars, LEVELS.length);
     this.persist();
     const last = levelIdx === LEVELS.length - 1;
-    openModal(`<div class="banner">${last ? 'Curtain call!' : level.name + ' cleared!'}</div><div class="stars">${[0,1,2].map(i => `<span class="${i < stars ? 'on' : 'off'}" style="animation-delay:${.35 + i*.28}s">★</span>`).join('')}</div><p class="quote"><b>Hacivat:</b> “${g.board.pick(WIN_H)}”</p>${last ? '' : `<div class="fact"><b>New stop unlocked: ${LEVELS[levelIdx+1].name}</b>${LEVELS[levelIdx+1].sub}</div>`}<p>Reward: 🩴 +1${stars === 3 ? '  🧹 +1  🎲 +1  ⚡ +1' : ''}</p><div class="row">${last ? '' : '<button class="btn" id="nextBtn">Continue</button>'}<button class="btn alt" id="mapBtn">Map</button></div>`);
+    openModal(`<div class="banner">${last ? 'Curtain call!' : level.name + ' cleared!'}</div><div class="stars">${[0,1,2].map(i => `<span class="${i < stars ? 'on' : 'off'}" style="animation-delay:${.35 + i*.28}s">★</span>`).join('')}</div><p class="quote"><b>Hacivat:</b> “${g.board.pick(WIN_H)}”</p>${last ? '' : `<div class="fact"><b>New stop unlocked: ${LEVELS[levelIdx+1].name}</b>${LEVELS[levelIdx+1].sub}</div>`}<p>Reward: 🩴 +1${stars === 3 ? '  🧹 +1  🎲 +1  ⚡ +1' : ''}</p>${adsEnabled ? '<div class="row"><button class="btn warm adBtn" id="doubleBtn"><span class="adTag">▶ AD</span>Double reward</button></div>' : ''}<div class="row">${last ? '' : '<button class="btn" id="nextBtn">Continue</button>'}<button class="btn alt" id="mapBtn">Map</button></div>`);
     for (let i = 0; i < stars; i++) setTimeout(() => ui.star(i), 350 + i*280);
     if (stars >= 2) confetti(stars === 3 ? 160 : 90);
     levelEnded();
+    if (adsEnabled) $('doubleBtn').onclick = async () => {
+      const btn = $<HTMLButtonElement>('doubleBtn'); btn.disabled = true;
+      const r = await showRewarded('double');
+      // Unlike "+5 moves", a bonus is only paid for an ad actually watched.
+      if (r !== 'rewarded'){ btn.disabled = false; if (r === 'unavailable'){ this.talk.say('H', 'No ad available right now, effendi.'); this.adNote(); } return; }
+      grantWinReward(save, stars); this.persist(); updateBoosters(g); btn.remove();
+      this.talk.say('K', 'Double helping! The bazaar is generous today!');
+    };
     if (!last) $('nextBtn').onclick = async () => { await maybeInterstitial(); const n = levelIdx + 1; this.goToMap(); setTimeout(() => this.map.centerOn(n, true), 250); setTimeout(() => this.map.openPlace(n), 900); };
     $('mapBtn').onclick = async () => { await maybeInterstitial(); this.goToMap(); };
   }
@@ -108,9 +117,17 @@ export class App {
       const r = await showRewarded('moves');
       if (r === 'skipped'){ btn.disabled = false; this.talk.say('K','No ad, no tea... fair enough!'); return; }
       g.addExtraMoves(); closeModal(); g.busy = false; g.lastInput = performance.now(); this.talk.say('K','Fresh tea! Let\'s go!');
+      if (r === 'unavailable') this.adNote();
     };
     $('retryBtn').onclick = async () => { await maybeInterstitial(); closeModal(); this.startLevel(g.levelIdx); };
     $('mapBtn').onclick = async () => { await maybeInterstitial(); this.goToMap(); };
+  }
+
+  /** When no ad could play, say why in a small note so it can be reported (e.g. "error 3: No fill"). */
+  private adNote(){
+    const why = lastAdError(); if (!why) return;
+    const el = document.createElement('div'); el.className = 'adNote'; el.textContent = `Ad unavailable: ${why}`;
+    document.body.append(el); setTimeout(() => el.remove(), 6000);
   }
 
   /** Pause card ("Tea break"). Returns false if it couldn't open (mid-turn or a card is already up). */
@@ -118,7 +135,7 @@ export class App {
     const g = this.game;
     if (g.busy || modalOpen()) return false;
     g.busy = true;
-    openModal(`<div class="banner">Tea break</div><p class="quote"><b>Karagöz:</b> “A tea break? Two sugars for me!”</p><div class="row toggles"><button class="tog" id="togSound"></button><button class="tog" id="togMusic"></button></div><div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="mapBtn">Map</button></div>${privacyOptionsRequired() ? '<button class="linkBtn" id="privacyBtn">Privacy settings</button>' : ''}`);
+    openModal(`<div class="banner" id="pauseBanner">Tea break</div><p class="quote"><b>Karagöz:</b> “A tea break? Two sugars for me!”</p><div class="row toggles"><button class="tog" id="togSound"></button><button class="tog" id="togMusic"></button></div><div class="row"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="mapBtn">Map</button></div>${privacyOptionsRequired() ? '<button class="linkBtn" id="privacyBtn">Privacy settings</button>' : ''}<p class="small adDiag">v${APP_VERSION}${adsEnabled ? ' · ' + adStatus() : ''}</p>`);
     this.bindToggles();
     if (privacyOptionsRequired()) $('privacyBtn').onclick = () => showPrivacyOptions();
     $('resumeBtn').onclick = () => { closeModal(); g.busy = false; g.lastInput = performance.now(); };
@@ -154,8 +171,11 @@ export class App {
       $<HTMLButtonElement>('refillBtn').disabled = true;
       const r = await showRewarded('refill');
       close();
-      if (r === 'rewarded'){ this.save.boost[kind] = Math.min(9, (this.save.boost[kind] || 0) + 1); this.persist(); updateBoosters(g); this.talk.say('K', `One more ${name}, fresh from the bazaar!`); }
-      else if (r === 'unavailable') this.talk.say('H', 'No ad available right now, effendi. Try again later.');
+      // No ad available (offline, no fill): give it anyway, like "+5 moves". It still counts toward the daily cap.
+      if (r === 'skipped') return;
+      this.save.boost[kind] = Math.min(9, (this.save.boost[kind] || 0) + 1); this.persist(); updateBoosters(g);
+      this.talk.say('K', r === 'rewarded' ? `One more ${name}, fresh from the bazaar!` : `No ad today, so this ${name} is on the house!`);
+      if (r === 'unavailable') this.adNote();
     };
   }
 

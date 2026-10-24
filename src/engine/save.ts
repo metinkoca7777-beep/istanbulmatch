@@ -42,6 +42,11 @@ export function starsFor(movesLeft: number, moves: number) {
 export function recordWin(save: SaveData, levelIdx: number, stars: number, levelCount: number) {
   save.stars[levelIdx] = Math.max(save.stars[levelIdx] || 0, stars);
   save.unlocked = Math.max(save.unlocked, Math.min(levelCount, levelIdx + 2));
+  grantWinReward(save, stars);
+}
+
+/** The boosters a win pays out: a slipper, plus broom, lightning and dice for 3 stars. Also the "double reward" ad bonus. */
+export function grantWinReward(save: SaveData, stars: number) {
   save.boost.terlik = Math.min(9, save.boost.terlik + 1);
   if (stars === 3){ save.boost.supurge = Math.min(9, save.boost.supurge + 1); save.boost.oklava = Math.min(9, (save.boost.oklava || 0) + 1); save.boost.zar = Math.min(9, (save.boost.zar || 0) + 1); }
 }

@@ -1,17 +1,17 @@
 // When ads may be shown. Pure logic (no DOM, no SDK) so it can be unit-tested.
-// Principle: the player chooses rewarded ads; interstitials are rare and never interrupt play.
+// Principle: rewarded ads are the player's choice; interstitials only at natural breaks, never mid-level.
 
 export const AD_RULES = {
   /** No interstitials until the player has finished this many level attempts in total. */
-  interstitialAfterAttempts: 4,
+  interstitialAfterAttempts: 2,
   /** At most one interstitial every N level ends (wins or losses). */
-  interstitialEvery: 3,
+  interstitialEvery: 2,
   /** Minimum seconds between two interstitials. */
-  interstitialGapSec: 180,
+  interstitialGapSec: 90,
   /** No interstitial within this many seconds after a rewarded ad. */
-  afterRewardedSec: 90,
+  afterRewardedSec: 45,
   /** Rewarded ads for booster refills per calendar day. */
-  boosterRefillsPerDay: 5,
+  boosterRefillsPerDay: 10,
 } as const;
 
 export interface AdState {

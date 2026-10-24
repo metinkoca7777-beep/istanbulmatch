@@ -196,6 +196,21 @@ AdMob → **Payments**:
 
 ## Sorun giderme
 
+**Teşhis satırı:** oyunda duraklat (⏸). "Tea break" kartının en altında sürüm ve reklam durumu yazar, örneğin:
+`v1.0.2 · native · live units · ready=true · rewarded=none · rewarded load failed 3: No fill.`
+Reklam oynatılamadığında ekranın altında da birkaç saniye "Ad unavailable: …" notu çıkar.
+
+| Satırda | Anlamı |
+|---|---|
+| `failed 3` / `No fill` | Kod doğru çalışıyor, AdMob reklam göndermiyor. Yeni hesap ya da uygulama henüz onaylanmamış (AdMob → Apps → durum "Requires review" / "Limited ad serving"), uygulama Play kaydına bağlanmamış ya da ödeme bilgileri eksik. Telefonunu test cihazı olarak eklersen (6. adım) test reklamları hemen gelir. |
+| `failed 0` / `Internal error` | Uygulama kimliği ile birim kimlikleri farklı hesaplardan, ya da kimlik yanlış yazılmış. |
+| `failed 2` / `Network` | İnternet yok. |
+| `consent …: ads not allowed` | GDPR onayı verilmedi ya da AdMob'da GDPR mesajı yayınlanmamış. |
+| `init failed` | AdMob SDK başlatılamadı; satırdaki mesajı bana gönder. |
+| `test units` | Debug derlemesi kurulu; Play'den indirilen sürümde `live units` yazmalı. |
+
+Reklam hiç gelmese de oyuncu engellenmez: "+5 moves" ve güçlendirici dolumu (günlük sınır içinde) yine verilir.
+
 | Belirti | Olası sebep |
 |---|---|
 | Hiç reklam çıkmıyor, "+5 moves" yine de hamle veriyor | Normal davranış: reklam yüklenemeyince oyuncu cezalandırılmıyor. Yeni birimler birkaç saat sürebilir; uygulama "unpublished" ya da inceleme bekliyor olabilir; internet yok. |
